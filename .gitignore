@@ -1,0 +1,9 @@
+﻿# Root ignores
+Backend/build/
+Backend/bin/
+Frontend/node_modules/
+Frontend/dist/
+.vscode/
+.idea/
+*.iml
+*.log
