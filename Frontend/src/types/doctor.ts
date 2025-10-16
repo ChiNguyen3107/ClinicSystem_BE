@@ -1,17 +1,20 @@
 export interface Doctor {
-  id: string;
-  userId: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
-  dateOfBirth?: string;
+  id: number;
   specialty: string;
-  licenseNo: string;
-  room?: string;
-  bio?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  avatar?: string;
+  licenseNumber: string;
+  examinationRoom?: string;
+  biography?: string;
+  account: {
+    id: number;
+    fullName: string;
+    email: string;
+    phone?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -42,25 +45,25 @@ export interface CreateDoctorRequest {
   password: string;
   fullName: string;
   phone?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: string;
   dateOfBirth?: string;
   
   // Step 2: Doctor profile
   specialty: string;
-  licenseNo: string;
-  room?: string;
-  bio?: string;
+  licenseNumber: string;
+  examinationRoom?: string;
+  biography?: string;
 }
 
 export interface UpdateDoctorRequest {
   fullName?: string;
   phone?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: string;
   dateOfBirth?: string;
   specialty?: string;
-  room?: string;
-  bio?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  examinationRoom?: string;
+  biography?: string;
+  status?: string;
 }
 
 export interface DoctorFilters {

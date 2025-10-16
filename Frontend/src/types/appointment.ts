@@ -1,57 +1,75 @@
 import { z } from 'zod';
 
 export enum AppointmentStatus {
-  PENDING = 'PENDING',
+  REQUESTED = 'REQUESTED',
   CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED',
+  CHECKED_IN = 'CHECKED_IN',
   COMPLETED = 'COMPLETED',
-  NO_SHOW = 'NO_SHOW'
+  CANCELLED = 'CANCELLED'
 }
 
 export interface Appointment {
-  id: string;
-  code: string;
-  patientId: string;
-  patientName: string;
-  patientPhone: string;
-  doctorId: string;
-  doctorName: string;
-  doctorSpecialty: string;
-  roomId: string;
-  roomName: string;
-  appointmentDate: string;
-  startTime: string;
-  endTime: string;
-  duration: number; // minutes
+  id: number;
+  patient: {
+    id: number;
+    code: string;
+    fullName: string;
+    phone: string;
+  };
+  doctor: {
+    id: number;
+    specialty: string;
+    licenseNumber: string;
+    account: {
+      id: number;
+      fullName: string;
+      email: string;
+    };
+  };
+  clinicRoom: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  scheduledAt: string;
   status: AppointmentStatus;
-  reason: string;
+  reason?: string;
   notes?: string;
-  cancellationReason?: string;
+  duration: number;
+  createdBy: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
+  request?: {
+    id: number;
+    preferredDate: string;
+    preferredTime: string;
+    reason: string;
+    status: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateAppointmentRequest {
-  patientId: string;
-  doctorId: string;
-  roomId: string;
-  appointmentDate: string;
-  startTime: string;
+  patientId: number;
+  doctorId: number;
+  clinicRoomId: number;
+  scheduledAt: string;
   duration: number;
-  reason: string;
+  reason?: string;
   notes?: string;
 }
 
 export interface UpdateAppointmentRequest {
-  doctorId?: string;
-  roomId?: string;
-  appointmentDate?: string;
-  startTime?: string;
+  doctorId?: number;
+  clinicRoomId?: number;
+  scheduledAt?: string;
   duration?: number;
   reason?: string;
   notes?: string;
   status?: AppointmentStatus;
-  cancellationReason?: string;
 }
 
 export interface AppointmentFilters {

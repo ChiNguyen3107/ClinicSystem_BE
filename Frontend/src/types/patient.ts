@@ -1,21 +1,20 @@
 export interface Patient {
   id: number;
   code: string;
-  name: string;
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  fullName: string;
+  gender: string;
   dateOfBirth: string;
   phone: string;
   email?: string;
   address?: string;
   note?: string;
-  status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PatientCreateRequest {
-  name: string;
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  fullName: string;
+  gender: string;
   dateOfBirth: string;
   phone: string;
   email?: string;
@@ -24,8 +23,8 @@ export interface PatientCreateRequest {
 }
 
 export interface PatientUpdateRequest {
-  name?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  fullName?: string;
+  gender?: string;
   dateOfBirth?: string;
   phone?: string;
   email?: string;

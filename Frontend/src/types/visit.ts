@@ -1,32 +1,35 @@
 export interface Visit {
-  id: string;
-  visitCode: string;
-  patientId: string;
+  id: number;
   patient: {
-    id: string;
+    id: number;
+    code: string;
     fullName: string;
-    dateOfBirth: string;
-    phoneNumber: string;
-    address: string;
+    phone: string;
   };
-  doctorId: string;
-  doctor: {
-    id: string;
-    fullName: string;
-    specialization: string;
-    phoneNumber: string;
+  primaryAppointment: {
+    id: number;
+    scheduledAt: string;
+    doctor: {
+      id: number;
+      specialty: string;
+      account: {
+        id: number;
+        fullName: string;
+      };
+    };
   };
-  appointmentId?: string;
-  visitDate: string;
-  preliminaryDx: string; // Chẩn đoán sơ bộ
-  symptoms: string;
-  clinicalNotes: string;
+  provisionalDiagnosis?: string;
+  clinicalNote?: string;
   status: VisitStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export type VisitStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export enum VisitStatus {
+  OPEN = 'OPEN',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
 
 export interface VisitFilter {
   doctorId?: string;
@@ -37,17 +40,14 @@ export interface VisitFilter {
 }
 
 export interface CreateVisitRequest {
-  patientId: string;
-  doctorId: string;
-  appointmentId?: string;
-  preliminaryDx: string;
-  symptoms: string;
-  clinicalNotes: string;
+  patientId: number;
+  primaryAppointmentId: number;
+  provisionalDiagnosis?: string;
+  clinicalNote?: string;
 }
 
 export interface UpdateVisitRequest {
-  preliminaryDx?: string;
-  symptoms?: string;
-  clinicalNotes?: string;
+  provisionalDiagnosis?: string;
+  clinicalNote?: string;
   status?: VisitStatus;
 }

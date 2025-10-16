@@ -22,7 +22,15 @@ export interface Role extends BaseEntity {
   description?: string;
 }
 
-// Patient types
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  DOCTOR = 'DOCTOR',
+  NURSE = 'NURSE',
+  RECEPTIONIST = 'RECEPTIONIST',
+  PATIENT = 'PATIENT'
+}
+
+// Patient types - Cập nhật theo backend Patient entity
 export interface Patient extends BaseEntity {
   code: string;
   fullName: string;
@@ -34,7 +42,7 @@ export interface Patient extends BaseEntity {
   note?: string;
 }
 
-// Doctor types
+// Doctor types - Cập nhật theo backend Doctor entity
 export interface Doctor extends BaseEntity {
   specialty: string;
   licenseNumber: string;
@@ -43,7 +51,7 @@ export interface Doctor extends BaseEntity {
   account: User;
 }
 
-// Appointment types
+// Appointment types - Cập nhật theo backend Appointment entity
 export interface Appointment extends BaseEntity {
   patient: Patient;
   doctor: Doctor;
@@ -58,12 +66,11 @@ export interface Appointment extends BaseEntity {
 }
 
 export enum AppointmentStatus {
-  PENDING = 'PENDING',
+  REQUESTED = 'REQUESTED',
   CONFIRMED = 'CONFIRMED',
-  IN_PROGRESS = 'IN_PROGRESS',
+  CHECKED_IN = 'CHECKED_IN',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  NO_SHOW = 'NO_SHOW'
+  CANCELLED = 'CANCELLED'
 }
 
 // Appointment Request types
@@ -102,21 +109,17 @@ export interface DoctorSchedule extends BaseEntity {
   isActive: boolean;
 }
 
-// Patient Visit types
+// Patient Visit types - Cập nhật theo backend PatientVisit entity
 export interface PatientVisit extends BaseEntity {
   patient: Patient;
-  doctor: Doctor;
-  appointment?: Appointment;
-  visitDate: string;
-  symptoms: string;
-  diagnosis: string;
-  treatment: string;
-  notes?: string;
+  primaryAppointment: Appointment;
+  provisionalDiagnosis?: string;
+  clinicalNote?: string;
   status: VisitStatus;
 }
 
 export enum VisitStatus {
-  IN_PROGRESS = 'IN_PROGRESS',
+  OPEN = 'OPEN',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
 }
@@ -470,11 +473,10 @@ export interface UpdateDiscountCodeRequest {
 }
 
 export enum BillingStatus {
-  DRAFT = 'DRAFT',
-  PENDING = 'PENDING',
+  UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
   PAID = 'PAID',
-  CANCELLED = 'CANCELLED',
-  REFUNDED = 'REFUNDED'
+  CANCELLED = 'CANCELLED'
 }
 
 export enum PaymentMethod {
@@ -497,14 +499,12 @@ export interface BillingExportOptions {
   paymentMethod?: PaymentMethod[];
 }
 
-// API Response types
+// API Response types - Cập nhật theo backend RestResponse
 export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
+  statusCode: number;
+  error?: string;
+  message: string | string[];
   data: T;
-  errors?: string[];
-  timestamp?: string;
-  path?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -535,13 +535,18 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ErrorResponse {
-  success: false;
+  statusCode: number;
+  error: string;
   message: string;
-  errors: string[];
+  details?: ErrorDetail[];
   timestamp: string;
   path: string;
-  status: number;
-  details?: Record<string, any>;
+}
+
+export interface ErrorDetail {
+  field: string;
+  message: string;
+  rejectedValue?: any;
 }
 
 export interface ValidationError {
@@ -726,6 +731,33 @@ export interface WebSocketConfig {
   url: string;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+}
+
+// DTO Types - Thêm theo backend DTOs
+export interface CreateRequest<T> {
+  [key: string]: any;
+}
+
+export interface UpdateRequest<T> {
+  [key: string]: any;
+}
+
+export interface FilterRequest {
+  page?: number;
+  size?: number;
+  sort?: string;
+  direction?: 'ASC' | 'DESC';
+  search?: string;
+  [key: string]: any;
+}
+
+export interface SearchRequest {
+  keyword?: string;
+  filters?: Record<string, any>;
+  page?: number;
+  size?: number;
+  sort?: string;
+  direction?: 'ASC' | 'DESC';
 }
 
 // Export report types
