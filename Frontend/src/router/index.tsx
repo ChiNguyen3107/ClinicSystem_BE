@@ -26,6 +26,7 @@ const ReportsPage = React.lazy(() => import('@/pages/reports/ReportsPage').then(
 const AdvancedPage = React.lazy(() => import('@/pages/advanced/AdvancedPage').then(module => ({ default: module.default })));
 const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage').then(module => ({ default: module.SettingsPage })));
 const PerformanceDashboard = React.lazy(() => import('@/pages/performance/PerformanceDashboard').then(module => ({ default: module.PerformanceDashboard })));
+const RealtimeDashboard = React.lazy(() => import('@/pages/RealtimeDashboard').then(module => ({ default: module.RealtimeDashboard })));
 
 // Public pages
 const PublicHome = React.lazy(() => import('@/pages/public/Home').then(module => ({ default: module.Home })));
@@ -311,6 +312,14 @@ export const router = createBrowserRouter([
         element: (
           <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <PerformanceDashboard />
+          </OptimizedSuspense>
+        ),
+      },
+      {
+        path: 'realtime',
+        element: (
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
+            <RealtimeDashboard />
           </OptimizedSuspense>
         ),
       },

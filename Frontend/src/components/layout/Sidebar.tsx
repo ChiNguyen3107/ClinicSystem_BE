@@ -12,13 +12,15 @@ import {
   BarChart3,
   Stethoscope,
   Package,
-  Sparkles
+  Sparkles,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useUIStore } from '@/store/ui.store';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Real-time', href: '/realtime', icon: Activity },
   { name: 'Bệnh nhân', href: '/patients', icon: Users },
   { name: 'Lịch hẹn', href: '/appointments', icon: Calendar },
   { name: 'Bác sĩ', href: '/doctors', icon: UserCheck },
