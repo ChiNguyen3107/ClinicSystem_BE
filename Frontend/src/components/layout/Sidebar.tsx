@@ -11,7 +11,8 @@ import {
   Settings,
   BarChart3,
   Stethoscope,
-  Package
+  Package,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useUIStore } from '@/store/ui.store';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Thuốc', href: '/medications', icon: Pill },
   { name: 'Hóa đơn', href: '/billing', icon: CreditCard },
   { name: 'Báo cáo', href: '/reports', icon: BarChart3 },
+  { name: 'Tính năng nâng cao', href: '/advanced', icon: Sparkles },
   { name: 'Cài đặt', href: '/settings', icon: Settings },
 ];
 

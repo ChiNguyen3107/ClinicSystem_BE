@@ -9,6 +9,7 @@ import type { ServiceOrder } from '@/types/service';
 import { medicalServiceHandlers, indicatorHandlers } from './services';
 import { billingHandlers } from './billingHandlers';
 import { publicHandlers } from './publicHandlers';
+import { advancedHandlers } from './advancedHandlers';
 import type { Prescription, Medication, Billing, PrescriptionFilters, MedicationInteraction, MedicationBatch } from '@/types';
 
 // Mock data
@@ -2415,7 +2416,10 @@ export const handlers = [
   ...billingHandlers,
 
   // Prescription handlers
-  ...prescriptionHandlers
+  ...prescriptionHandlers,
+
+  // Advanced handlers
+  ...advancedHandlers
 ];
 
 // Mock data for prescriptions
@@ -2813,7 +2817,8 @@ export const allHandlers = [
   ...medicalServiceHandlers,
   ...indicatorHandlers,
   ...billingHandlers,
-  ...publicHandlers
+  ...publicHandlers,
+  ...advancedHandlers
 ];
 
 // Helper function to calculate end time
