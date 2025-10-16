@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -19,7 +20,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "doctors")
+@Table(name = "doctors", indexes = {
+    @Index(name = "idx_doctor_specialty", columnList = "specialty"),
+    @Index(name = "idx_doctor_license", columnList = "licenseNumber"),
+    @Index(name = "idx_doctor_account", columnList = "account_id")
+})
 public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

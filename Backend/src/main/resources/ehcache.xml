@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://www.ehcache.org/ehcache.xsd">
+
+    <cache name="doctors"
+           maxEntriesLocalHeap="1000"
+           timeToLiveSeconds="1800"
+           timeToIdleSeconds="900">
+        <persistence strategy="none"/>
+    </cache>
+
+    <cache name="patients"
+           maxEntriesLocalHeap="1000"
+           timeToLiveSeconds="1800"
+           timeToIdleSeconds="900">
+        <persistence strategy="none"/>
+    </cache>
+
+    <cache name="users"
+           maxEntriesLocalHeap="500"
+           timeToLiveSeconds="3600"
+           timeToIdleSeconds="1800">
+        <persistence strategy="none"/>
+    </cache>
+
+    <cache name="appointments"
+           maxEntriesLocalHeap="2000"
+           timeToLiveSeconds="900"
+           timeToIdleSeconds="300">
+        <persistence strategy="none"/>
+    </cache>
+
+</config>

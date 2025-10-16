@@ -3,6 +3,8 @@ package vn.project.ClinicSystem.service;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class DoctorService {
         this.validator = validator;
     }
 
+    @Cacheable(value = "doctors", key = "'all'")
     public List<Doctor> findAll() {
         return doctorRepository.findAll();
     }
@@ -58,6 +61,7 @@ public class DoctorService {
         return doctorRepository.findBySpecialtyContainingIgnoreCase(keyword.trim(), pageable);
     }
 
+    @Cacheable(value = "doctors", key = "#id")
     public Doctor getById(Long id) {
         return doctorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy bác sĩ với id: " + id));
@@ -69,6 +73,7 @@ public class DoctorService {
     }
 
     @Transactional
+    @CacheEvict(value = "doctors", allEntries = true)
     public Doctor createForUser(DoctorCreateRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Thông tin bác sĩ không được null");
@@ -92,6 +97,7 @@ public class DoctorService {
     }
 
     @Transactional
+    @CacheEvict(value = "doctors", allEntries = true)
     public Doctor update(Long id, Doctor changes) {
         if (changes == null) {
             throw new IllegalArgumentException("Thông tin bác sĩ không được null");
@@ -131,6 +137,7 @@ public class DoctorService {
     }
 
     @Transactional
+    @CacheEvict(value = "doctors", allEntries = true)
     public void delete(Long id) {
         if (!doctorRepository.existsById(id)) {
             throw new EntityNotFoundException("Không tìm thấy bác sĩ với id: " + id);
