@@ -6,8 +6,6 @@ import path from 'path'
 export default defineConfig({
   plugins: [
     react({
-      // Enable React Fast Refresh
-      fastRefresh: true,
       // Enable JSX runtime
       jsxRuntime: 'automatic',
     })
@@ -31,52 +29,60 @@ export default defineConfig({
     // Enable code splitting
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-accordion',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-collapsible',
-            '@radix-ui/react-context-menu',
-            '@radix-ui/react-hover-card',
-            '@radix-ui/react-label',
-            '@radix-ui/react-menubar',
-            '@radix-ui/react-navigation-menu',
-            '@radix-ui/react-progress',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-slider',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-toggle',
-            '@radix-ui/react-toggle-group',
-            '@radix-ui/react-aspect-ratio'
-          ],
-          'chart-vendor': ['recharts', 'react-big-calendar'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'utils-vendor': ['axios', 'date-fns', 'moment', 'clsx', 'tailwind-merge'],
-          'pdf-vendor': ['jspdf', 'html2canvas'],
-          'excel-vendor': ['xlsx'],
-          'qr-vendor': ['qrcode'],
-          'store-vendor': ['zustand'],
-          'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'carousel-vendor': ['embla-carousel-react'],
-          'panels-vendor': ['react-resizable-panels'],
-          'day-picker-vendor': ['react-day-picker'],
-          'drawer-vendor': ['vaul'],
-          'command-vendor': ['cmdk'],
-          'toast-vendor': ['sonner'],
-          'icons-vendor': ['lucide-react']
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('@radix-ui')) {
+            return 'ui-vendor';
+          }
+          if (id.includes('recharts') || id.includes('react-big-calendar')) {
+            return 'chart-vendor';
+          }
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod') || id.includes('yup')) {
+            return 'form-vendor';
+          }
+          if (id.includes('axios') || id.includes('date-fns') || id.includes('moment') || id.includes('clsx') || id.includes('tailwind-merge')) {
+            return 'utils-vendor';
+          }
+          if (id.includes('jspdf') || id.includes('html2canvas')) {
+            return 'pdf-vendor';
+          }
+          if (id.includes('xlsx')) {
+            return 'excel-vendor';
+          }
+          if (id.includes('qrcode')) {
+            return 'qr-vendor';
+          }
+          if (id.includes('zustand')) {
+            return 'store-vendor';
+          }
+          if (id.includes('@dnd-kit')) {
+            return 'dnd-vendor';
+          }
+          if (id.includes('embla-carousel')) {
+            return 'carousel-vendor';
+          }
+          if (id.includes('react-resizable-panels')) {
+            return 'panels-vendor';
+          }
+          if (id.includes('react-day-picker')) {
+            return 'day-picker-vendor';
+          }
+          if (id.includes('vaul')) {
+            return 'drawer-vendor';
+          }
+          if (id.includes('cmdk')) {
+            return 'command-vendor';
+          }
+          if (id.includes('sonner')) {
+            return 'toast-vendor';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons-vendor';
+          }
+          return null;
         },
         // Optimize chunk names
         chunkFileNames: (chunkInfo) => {
@@ -87,6 +93,7 @@ export default defineConfig({
         },
         entryFileNames: 'js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return 'assets/[name]-[hash].[ext]'
           const info = assetInfo.name.split('.')
           const ext = info[info.length - 1]
           if (/\.(css)$/.test(assetInfo.name)) {

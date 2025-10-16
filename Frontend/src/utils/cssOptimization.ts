@@ -328,7 +328,7 @@ export const OptimizedCSS: React.FC<{
   }, [css, critical, options, optimizeCSS, generateCriticalCSS]);
 
   if (inline) {
-    return <style dangerouslySetInnerHTML={{ __html: optimizedCSS }} />;
+    return React.createElement('style', { dangerouslySetInnerHTML: { __html: optimizedCSS } });
   }
 
   return null;

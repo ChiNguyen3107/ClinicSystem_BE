@@ -1,9 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -13,44 +11,26 @@ import {
 } from '@/components/ui/dialog';
 import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  FormProvider,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { ValidatedInput, ValidatedSelect, ValidatedTextarea } from '@/components/ui/ValidatedInput';
 import { Loader2, X } from 'lucide-react';
 import { patientService } from '@/api/services/patient.service';
 import { usePatientStore } from '@/store/patient.store';
 import { generatePatientCode } from '@/utils/format';
+import { patientSchemas } from '@/utils/validationSchemas';
+import { ValidationErrorHandler, NetworkErrorHandler } from '@/utils/validationHelpers';
 import type { Patient, PatientCreateRequest, PatientUpdateRequest } from '@/types/patient';
 
-// Validation schema
-const patientSchema = z.object({
-  name: z.string().min(1, 'Họ tên là bắt buộc'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    required_error: 'Giới tính là bắt buộc',
-  }),
-  dateOfBirth: z.string().min(1, 'Ngày sinh là bắt buộc'),
-  phone: z
-    .string()
-    .min(10, 'Số điện thoại phải có ít nhất 10 số')
-    .max(10, 'Số điện thoại không được quá 10 số')
-    .regex(/^\d+$/, 'Số điện thoại chỉ được chứa số'),
-  email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
-  address: z.string().optional(),
-  note: z.string().optional(),
-});
-
-type PatientFormData = z.infer<typeof patientSchema>;
+type PatientFormData = {
+  fullName: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  dateOfBirth: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  note?: string;
+};
 
 interface PatientFormProps {
   patient?: Patient;
@@ -67,9 +47,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<PatientFormData>({
-    resolver: zodResolver(patientSchema),
+    resolver: yupResolver(patient ? patientSchemas.update : patientSchemas.create),
     defaultValues: {
-      name: patient?.name || '',
+      fullName: patient?.name || '',
       gender: patient?.gender || 'MALE',
       dateOfBirth: patient?.dateOfBirth ? patient.dateOfBirth.split('T')[0] : '',
       phone: patient?.phone || '',
@@ -88,7 +68,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       if (patient) {
         // Update existing patient
         const updateData: PatientUpdateRequest = {
-          ...data,
+          name: data.fullName,
+          gender: data.gender,
+          dateOfBirth: data.dateOfBirth,
+          phone: data.phone,
           email: data.email || undefined,
           address: data.address || undefined,
           note: data.note || undefined,
@@ -97,7 +80,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       } else {
         // Create new patient
         const createData: PatientCreateRequest = {
-          ...data,
+          fullName: data.fullName,
+          gender: data.gender,
+          dateOfBirth: data.dateOfBirth,
+          phone: data.phone,
           email: data.email || undefined,
           address: data.address || undefined,
           note: data.note || undefined,
@@ -108,7 +94,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       onSuccess?.();
       closeForm();
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Có lỗi xảy ra');
+      const errorMessage = NetworkErrorHandler.handleNetworkError(error);
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -130,7 +117,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
+        <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Card>
               <CardHeader>
@@ -138,124 +125,62 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Họ tên *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nhập họ tên" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <ValidatedInput
+                    name="fullName"
+                    label="Họ tên"
+                    placeholder="Nhập họ tên"
+                    required
                   />
 
-                  <FormField
-                    control={form.control}
+                  <ValidatedSelect
                     name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Giới tính *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn giới tính" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="MALE">Nam</SelectItem>
-                            <SelectItem value="FEMALE">Nữ</SelectItem>
-                            <SelectItem value="OTHER">Khác</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Giới tính"
+                    placeholder="Chọn giới tính"
+                    required
+                    options={[
+                      { value: 'MALE', label: 'Nam' },
+                      { value: 'FEMALE', label: 'Nữ' },
+                      { value: 'OTHER', label: 'Khác' },
+                    ]}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
+                  <ValidatedInput
                     name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ngày sinh *</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Ngày sinh"
+                    type="date"
+                    required
                   />
 
-                  <FormField
-                    control={form.control}
+                  <ValidatedInput
                     name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Số điện thoại *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nhập số điện thoại" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Số điện thoại"
+                    type="tel"
+                    placeholder="Nhập số điện thoại"
+                    required
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
+                <ValidatedInput
                   name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="Nhập email" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  label="Email"
+                  type="email"
+                  placeholder="Nhập email"
                 />
 
-                <FormField
-                  control={form.control}
+                <ValidatedTextarea
                   name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Địa chỉ</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Nhập địa chỉ" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  label="Địa chỉ"
+                  placeholder="Nhập địa chỉ"
+                  rows={2}
                 />
 
-                <FormField
-                  control={form.control}
+                <ValidatedTextarea
                   name="note"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ghi chú</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Nhập ghi chú" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  label="Ghi chú"
+                  placeholder="Nhập ghi chú"
+                  rows={3}
                 />
               </CardContent>
             </Card>
@@ -276,7 +201,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </Button>
             </div>
           </form>
-        </Form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

@@ -1,37 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { ValidatedInput, ValidatedSelect, ValidatedTextarea } from '@/components/ui/ValidatedInput';
+import { FormProvider } from '@/components/ui/form';
 import { CalendarIcon, Clock, User, Phone, Mail, Stethoscope } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/utils/cn';
+import { publicSchemas } from '@/utils/validationSchemas';
+import { ValidationErrorHandler, NetworkErrorHandler } from '@/utils/validationHelpers';
 import { PublicDoctor, PublicService, CreateBookingRequest } from '@/types/public';
 
-const bookingSchema = z.object({
-  patientName: z.string().min(2, 'Tên phải có ít nhất 2 ký tự'),
-  patientPhone: z.string().min(10, 'Số điện thoại phải có ít nhất 10 số'),
-  patientEmail: z.string().email('Email không hợp lệ'),
-  patientDob: z.string().optional(),
-  doctorId: z.string().min(1, 'Vui lòng chọn bác sĩ'),
-  serviceId: z.string().optional(),
-  appointmentDate: z.string().min(1, 'Vui lòng chọn ngày khám'),
-  appointmentTime: z.string().min(1, 'Vui lòng chọn giờ khám'),
-  symptoms: z.string().optional(),
-  paymentMethod: z.enum(['CASH', 'VNPAY', 'MOMO']).optional(),
-  notes: z.string().optional(),
-});
-
-type BookingFormData = z.infer<typeof bookingSchema>;
+type BookingFormData = {
+  patientName: string;
+  patientPhone: string;
+  patientEmail: string;
+  patientDob?: string;
+  doctorId: string;
+  serviceId?: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  symptoms?: string;
+  paymentMethod?: 'CASH' | 'VNPAY' | 'MOMO';
+  notes?: string;
+};
 
 interface BookingFormProps {
   doctors: PublicDoctor[];
@@ -61,16 +58,12 @@ export const BookingForm: React.FC<BookingFormProps> = ({
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isValid }
-  } = useForm<BookingFormData>({
-    resolver: zodResolver(bookingSchema),
+  const form = useForm<BookingFormData>({
+    resolver: yupResolver(publicSchemas.booking),
     mode: 'onChange'
   });
+
+  const { handleSubmit, watch, setValue, formState: { errors, isValid } } = form;
 
   const watchedDoctorId = watch('doctorId');
   const watchedDate = watch('appointmentDate');
@@ -112,8 +105,13 @@ export const BookingForm: React.FC<BookingFormProps> = ({
     setSelectedDate(undefined);
   };
 
-  const handleFormSubmit = (data: BookingFormData) => {
-    onSubmit(data);
+  const handleFormSubmit = async (data: BookingFormData) => {
+    try {
+      await onSubmit(data);
+    } catch (error: any) {
+      const errorMessage = NetworkErrorHandler.handleNetworkError(error);
+      console.error('Booking error:', errorMessage);
+    }
   };
 
   const nextStep = () => {
@@ -159,63 +157,49 @@ export const BookingForm: React.FC<BookingFormProps> = ({
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-          {/* Step 1: Doctor Selection */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="doctorId">Chọn bác sĩ *</Label>
-                <Select onValueChange={handleDoctorChange} value={watchedDoctorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn bác sĩ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map((doctor) => (
-                      <SelectItem key={doctor.id} value={doctor.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{doctor.fullName}</span>
-                          <Badge variant="secondary">{doctor.specialty}</Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.doctorId && (
-                  <p className="text-sm text-destructive mt-1">{errors.doctorId.message}</p>
-                )}
-              </div>
+        <FormProvider {...form}>
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+            {/* Step 1: Doctor Selection */}
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                <ValidatedSelect
+                  name="doctorId"
+                  label="Chọn bác sĩ"
+                  placeholder="Chọn bác sĩ"
+                  required
+                  options={doctors.map((doctor) => ({
+                    value: doctor.id,
+                    label: `${doctor.fullName} - ${doctor.specialty}`,
+                  }))}
+                  onValueChange={handleDoctorChange}
+                />
 
-              {selectedDoctorData && (
-                <div className="p-4 border rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">{selectedDoctorData.fullName}</h4>
-                      <p className="text-sm text-muted-foreground">{selectedDoctorData.specialty}</p>
+                {selectedDoctorData && (
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{selectedDoctorData.fullName}</h4>
+                        <p className="text-sm text-muted-foreground">{selectedDoctorData.specialty}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div>
-                <Label htmlFor="serviceId">Dịch vụ (tùy chọn)</Label>
-                <Select onValueChange={(value) => setValue('serviceId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn dịch vụ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ValidatedSelect
+                  name="serviceId"
+                  label="Dịch vụ (tùy chọn)"
+                  placeholder="Chọn dịch vụ"
+                  options={services.map((service) => ({
+                    value: service.id,
+                    label: service.name,
+                  }))}
+                  onValueChange={(value) => setValue('serviceId', value)}
+                />
               </div>
-            </div>
-          )}
+            )}
 
           {/* Step 2: Date & Time Selection */}
           {currentStep === 2 && (
@@ -395,6 +379,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
             )}
           </div>
         </form>
+        </FormProvider>
       </CardContent>
     </Card>
   );

@@ -299,44 +299,38 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   }, [priority, src, quality, format, width, height, optimizer]);
 
   if (hasError) {
-    return (
-      <div
-        className={`bg-gray-200 flex items-center justify-center ${className}`}
-        style={{ width, height }}
-      >
-        <span className="text-gray-500 text-sm">Không thể tải hình ảnh</span>
-      </div>
-    );
+    return React.createElement('div', {
+      className: `bg-gray-200 flex items-center justify-center ${className}`,
+      style: { width, height }
+    }, React.createElement('span', {
+      className: 'text-gray-500 text-sm'
+    }, 'Không thể tải hình ảnh'));
   }
 
-  return (
-    <div className={`relative ${className}`}>
-      {isLoading && placeholderSrc && (
-        <img
-          src={placeholderSrc}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover blur-sm"
-          style={{ width, height }}
-        />
-      )}
-      <img
-        ref={imgRef}
-        src={priority ? optimizedSrc : undefined}
-        data-src={!priority ? optimizedSrc : undefined}
-        alt={alt}
-        width={width}
-        height={height}
-        sizes={sizes}
-        loading={priority ? 'eager' : 'lazy'}
-        onLoad={handleLoad}
-        onError={handleError}
-        className={`transition-opacity duration-300 ${
-          isLoading ? 'opacity-0' : 'opacity-100'
-        }`}
-        style={{ width, height }}
-      />
-    </div>
-  );
+  return React.createElement('div', {
+    className: `relative ${className}`
+  }, [
+    isLoading && placeholderSrc && React.createElement('img', {
+      src: placeholderSrc,
+      alt: '',
+      className: 'absolute inset-0 w-full h-full object-cover blur-sm',
+      style: { width, height }
+    }),
+    React.createElement('img', {
+      ref: imgRef,
+      src: priority ? optimizedSrc : undefined,
+      'data-src': !priority ? optimizedSrc : undefined,
+      alt: alt,
+      width: width,
+      height: height,
+      sizes: sizes,
+      loading: priority ? 'eager' : 'lazy',
+      onLoad: handleLoad,
+      onError: handleError,
+      className: `transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`,
+      style: { width, height }
+    })
+  ]);
 };
 
 // Image optimization utilities

@@ -35,7 +35,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string(),
   phone: phoneSchema,
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    errorMap: () => ({ message: 'Giới tính không hợp lệ' }),
+    message: 'Giới tính không hợp lệ',
   }),
   dateOfBirth: z.string().min(1, 'Ngày sinh không được để trống'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -56,7 +56,7 @@ export const changePasswordSchema = z.object({
 export const createPatientSchema = z.object({
   fullName: nameSchema,
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    errorMap: () => ({ message: 'Giới tính không hợp lệ' }),
+    message: 'Giới tính không hợp lệ',
   }),
   dateOfBirth: z.string().min(1, 'Ngày sinh không được để trống'),
   phone: phoneSchema,
@@ -114,7 +114,7 @@ export function validateName(name: string): boolean {
 
 // Error message formatter
 export function formatValidationError(error: z.ZodError): string {
-  return error.errors.map(err => err.message).join(', ');
+  return error.issues.map(err => err.message).join(', ');
 }
 
 // Visit validation schemas
@@ -171,5 +171,5 @@ export const createBillingSchema = z.object({
 // Form field validation
 export function validateField(value: any, schema: z.ZodSchema): string | null {
   const result = schema.safeParse(value);
-  return result.success ? null : result.error.errors[0]?.message || 'Giá trị không hợp lệ';
+  return result.success ? null : result.error.issues[0]?.message || 'Giá trị không hợp lệ';
 }
