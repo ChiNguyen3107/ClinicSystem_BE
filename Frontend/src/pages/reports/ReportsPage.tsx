@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FilterBar } from '@/components/reports/FilterBar';
+import { FilterBar, ExportOptions, ReportScheduler } from '@/components/reports';
 import { 
   RevenueChart, 
   PatientChart, 
@@ -26,7 +26,9 @@ import {
   Calendar, 
   Package,
   Download,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  Settings
 } from 'lucide-react';
 
 export function ReportsPage() {
@@ -211,12 +213,14 @@ export function ReportsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="dashboard">Tổng quan</TabsTrigger>
           <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
           <TabsTrigger value="patients">Bệnh nhân</TabsTrigger>
           <TabsTrigger value="appointments">Lịch hẹn</TabsTrigger>
           <TabsTrigger value="services">Dịch vụ</TabsTrigger>
+          <TabsTrigger value="export">Xuất báo cáo</TabsTrigger>
+          <TabsTrigger value="schedule">Lên lịch</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
@@ -366,6 +370,51 @@ export function ReportsPage() {
               ))}
             </div>
           ) : null}
+        </TabsContent>
+
+        <TabsContent value="export" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Download className="h-5 w-5 mr-2" />
+                Tùy chọn xuất báo cáo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExportOptions reportType={activeTab} onExport={handleExport} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="h-5 w-5 mr-2" />
+                Cài đặt xuất báo cáo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Định dạng mặc định</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Chọn định dạng file mặc định khi xuất báo cáo
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Bao gồm biểu đồ</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Tự động bao gồm biểu đồ trong báo cáo
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="schedule" className="space-y-6">
+          <ReportScheduler onSchedule={handleSchedule} />
         </TabsContent>
       </Tabs>
     </div>

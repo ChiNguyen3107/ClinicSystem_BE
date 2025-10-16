@@ -1,49 +1,64 @@
-export interface DateRange {
-  from: Date;
-  to: Date;
-}
-
 export interface ReportFilters {
-  dateRange: DateRange;
-  doctorIds?: string[];
-  serviceIds?: string[];
-  patientType?: 'new' | 'returning' | 'all';
-  status?: 'completed' | 'cancelled' | 'pending' | 'all';
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+  doctorId?: string;
+  status?: string;
+  customFilters?: Record<string, any>;
 }
 
-// Revenue Reports
+export interface DashboardStats {
+  totalRevenue: number;
+  revenueGrowth: number;
+  totalPatients: number;
+  patientGrowth: number;
+  totalAppointments: number;
+  appointmentGrowth: number;
+  completionRate: number;
+  topPerformingDoctor: {
+    name: string;
+    revenue: number;
+  };
+  averageRevenuePerPatient: number;
+}
+
 export interface RevenueData {
-  period: string;
-  total: number;
-  byDoctor: Array<{
-    doctorId: string;
-    doctorName: string;
-    amount: number;
-  }>;
-  byService: Array<{
-    serviceId: string;
-    serviceName: string;
-    amount: number;
-    count: number;
-  }>;
-  trends: Array<{
+  summary: {
+    total: number;
+    growth: number;
+    average: number;
+  };
+  chartData: Array<{
     date: string;
     revenue: number;
     appointments: number;
   }>;
-  forecast?: Array<{
-    date: string;
-    predicted: number;
-    confidence: number;
+  byDoctor: Array<{
+    doctorName: string;
+    revenue: number;
+    percentage: number;
+  }>;
+  byService: Array<{
+    serviceName: string;
+    revenue: number;
+    count: number;
   }>;
 }
 
-// Patient Reports
 export interface PatientData {
-  total: number;
-  newPatients: number;
-  returningPatients: number;
-  byAge: Array<{
+  summary: {
+    total: number;
+    new: number;
+    returning: number;
+    growth: number;
+  };
+  chartData: Array<{
+    date: string;
+    newPatients: number;
+    totalPatients: number;
+  }>;
+  byAgeGroup: Array<{
     ageGroup: string;
     count: number;
     percentage: number;
@@ -53,122 +68,77 @@ export interface PatientData {
     count: number;
     percentage: number;
   }>;
-  byLocation: Array<{
-    location: string;
-    count: number;
-    percentage: number;
-  }>;
-  trends: Array<{
-    date: string;
-    newPatients: number;
-    totalPatients: number;
-  }>;
 }
 
-// Appointment Reports
 export interface AppointmentData {
-  total: number;
-  completed: number;
-  cancelled: number;
-  pending: number;
-  completionRate: number;
-  averageWaitingTime: number; // minutes
-  byDoctor: Array<{
-    doctorId: string;
-    doctorName: string;
+  summary: {
     total: number;
     completed: number;
     cancelled: number;
+    noShow: number;
     completionRate: number;
-  }>;
-  byTimeSlot: Array<{
-    timeSlot: string;
-    count: number;
-    completionRate: number;
-  }>;
-  cancelReasons: Array<{
-    reason: string;
-    count: number;
-    percentage: number;
-  }>;
-  trends: Array<{
+  };
+  chartData: Array<{
     date: string;
     scheduled: number;
     completed: number;
     cancelled: number;
   }>;
-}
-
-// Service Reports
-export interface ServiceData {
-  topServices: Array<{
-    serviceId: string;
-    serviceName: string;
-    usageCount: number;
-    revenue: number;
-    averagePrice: number;
+  byStatus: Array<{
+    status: string;
+    count: number;
+    percentage: number;
   }>;
-  topMedications: Array<{
-    medicationId: string;
-    medicationName: string;
-    usageCount: number;
-    revenue: number;
-    averagePrice: number;
-  }>;
-  inventory: Array<{
-    itemId: string;
-    itemName: string;
-    currentStock: number;
-    minStock: number;
-    status: 'low' | 'normal' | 'high';
-  }>;
-  revenueByCategory: Array<{
-    category: string;
-    revenue: number;
+  byTimeSlot: Array<{
+    timeSlot: string;
+    count: number;
     percentage: number;
   }>;
 }
 
-// Export Options
-export interface ExportOptions {
-  format: 'excel' | 'pdf';
-  includeCharts: boolean;
-  dateRange: DateRange;
-  sections: ('revenue' | 'patients' | 'appointments' | 'services')[];
+export interface ServiceData {
+  summary: {
+    totalServices: number;
+    totalRevenue: number;
+    averagePrice: number;
+    growth: number;
+  };
+  chartData: Array<{
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  byCategory: Array<{
+    category: string;
+    count: number;
+    revenue: number;
+    percentage: number;
+  }>;
+  popularServices: Array<{
+    serviceName: string;
+    count: number;
+    revenue: number;
+    growth: number;
+  }>;
 }
 
-// Scheduled Reports
+export interface ExportOptions {
+  format: 'excel' | 'pdf' | 'csv' | 'print';
+  includeCharts: boolean;
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+  sections: string[];
+}
+
 export interface ScheduledReport {
   id: string;
   name: string;
-  type: 'revenue' | 'patients' | 'appointments' | 'services' | 'all';
-  frequency: 'daily' | 'weekly' | 'monthly';
-  recipients: string[];
-  filters: ReportFilters;
+  type: string;
+  schedule: string;
+  email: string;
   isActive: boolean;
-  lastSent?: Date;
-  nextSend?: Date;
-}
-
-// Dashboard Stats
-export interface DashboardStats {
-  totalRevenue: number;
-  revenueGrowth: number;
-  totalPatients: number;
-  patientGrowth: number;
-  totalAppointments: number;
-  appointmentGrowth: number;
-  completionRate: number;
-  averageRevenuePerPatient: number;
-  topPerformingDoctor: {
-    id: string;
-    name: string;
-    revenue: number;
-  };
-  recentTrends: Array<{
-    date: string;
-    revenue: number;
-    patients: number;
-    appointments: number;
-  }>;
+  lastRun?: Date;
+  nextRun?: Date;
 }

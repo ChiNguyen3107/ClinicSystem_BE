@@ -1,11 +1,17 @@
-import React from 'react';
-import { Calendar, Filter, Download, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { DateRangePicker } from './DateRangePicker';
+import { CalendarIcon, Filter, Download, Clock, X } from 'lucide-react';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import { ReportFilters } from '@/types/report';
+import { cn } from '@/utils/cn';
 
 interface FilterBarProps {
   filters: ReportFilters;
@@ -22,227 +28,293 @@ export function FilterBar({
   onSchedule, 
   isLoading = false 
 }: FilterBarProps) {
-  const handleDateRangeChange = (dateRange: { from: Date; to: Date }) => {
-    onFiltersChange({ ...filters, dateRange });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [customFilters, setCustomFilters] = useState<Record<string, any>>({});
+
+  const handleDateRangeChange = (field: 'from' | 'to', date: Date | undefined) => {
+    if (date) {
+      onFiltersChange({
+        ...filters,
+        dateRange: {
+          ...filters.dateRange,
+          [field]: date
+        }
+      });
+    }
   };
 
-  const handleDoctorChange = (doctorIds: string) => {
-    const ids = doctorIds ? doctorIds.split(',') : [];
-    onFiltersChange({ ...filters, doctorIds: ids.length > 0 ? ids : undefined });
-  };
-
-  const handleServiceChange = (serviceIds: string) => {
-    const ids = serviceIds ? serviceIds.split(',') : [];
-    onFiltersChange({ ...filters, serviceIds: ids.length > 0 ? ids : undefined });
-  };
-
-  const handlePatientTypeChange = (patientType: string) => {
-    onFiltersChange({ 
-      ...filters, 
-      patientType: patientType === 'all' ? undefined : patientType as 'new' | 'returning' 
+  const handleDoctorChange = (doctorId: string) => {
+    onFiltersChange({
+      ...filters,
+      doctorId: doctorId === 'all' ? undefined : doctorId
     });
   };
 
   const handleStatusChange = (status: string) => {
-    onFiltersChange({ 
-      ...filters, 
-      status: status === 'all' ? undefined : status as 'completed' | 'cancelled' | 'pending' 
+    onFiltersChange({
+      ...filters,
+      status: status === 'all' ? undefined : status
     });
   };
 
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.doctorIds && filters.doctorIds.length > 0) count++;
-    if (filters.serviceIds && filters.serviceIds.length > 0) count++;
-    if (filters.patientType) count++;
-    if (filters.status) count++;
-    return count;
+  const handleCustomFilterChange = (key: string, value: any) => {
+    const newCustomFilters = { ...customFilters, [key]: value };
+    setCustomFilters(newCustomFilters);
+    onFiltersChange({
+      ...filters,
+      customFilters: newCustomFilters
+    });
   };
 
   const clearFilters = () => {
     onFiltersChange({
-      dateRange: filters.dateRange,
-      doctorIds: undefined,
-      serviceIds: undefined,
-      patientType: undefined,
-      status: undefined,
+      dateRange: {
+        from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        to: new Date(),
+      }
     });
+    setCustomFilters({});
   };
 
+  const hasActiveFilters = filters.doctorId || filters.status || Object.keys(customFilters).length > 0;
+
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Bộ lọc báo cáo
-            {getActiveFiltersCount() > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {getActiveFiltersCount()} bộ lọc
-              </Badge>
-            )}
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-              disabled={isLoading}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Xuất báo cáo
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onSchedule}
-              disabled={isLoading}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Lập lịch
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Date Range */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Khoảng thời gian
-            </label>
-            <DateRangePicker
-              value={filters.dateRange}
-              onChange={handleDateRangeChange}
-              disabled={isLoading}
-            />
-          </div>
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Main Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Date Range */}
+            <div className="space-y-2">
+              <Label>Từ ngày</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.dateRange.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.dateRange.from ? (
+                      format(filters.dateRange.from, "dd/MM/yyyy", { locale: vi })
+                    ) : (
+                      "Chọn ngày"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={filters.dateRange.from}
+                    onSelect={(date) => handleDateRangeChange('from', date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          {/* Doctor Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Bác sĩ</label>
-            <Select
-              value={filters.doctorIds?.join(',') || 'all'}
-              onValueChange={handleDoctorChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn bác sĩ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả bác sĩ</SelectItem>
-                <SelectItem value="1">BS. Nguyễn Văn A</SelectItem>
-                <SelectItem value="2">BS. Trần Thị B</SelectItem>
-                <SelectItem value="3">BS. Lê Văn C</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Label>Đến ngày</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.dateRange.to && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.dateRange.to ? (
+                      format(filters.dateRange.to, "dd/MM/yyyy", { locale: vi })
+                    ) : (
+                      "Chọn ngày"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={filters.dateRange.to}
+                    onSelect={(date) => handleDateRangeChange('to', date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          {/* Service Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Dịch vụ</label>
-            <Select
-              value={filters.serviceIds?.join(',') || 'all'}
-              onValueChange={handleServiceChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn dịch vụ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả dịch vụ</SelectItem>
-                <SelectItem value="1">Khám tổng quát</SelectItem>
-                <SelectItem value="2">Xét nghiệm máu</SelectItem>
-                <SelectItem value="3">Siêu âm</SelectItem>
-                <SelectItem value="4">Chụp X-quang</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Doctor Selection */}
+            <div className="space-y-2">
+              <Label>Bác sĩ</Label>
+              <Select value={filters.doctorId || 'all'} onValueChange={handleDoctorChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn bác sĩ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả bác sĩ</SelectItem>
+                  <SelectItem value="1">BS. Nguyễn Văn A</SelectItem>
+                  <SelectItem value="2">BS. Trần Thị B</SelectItem>
+                  <SelectItem value="3">BS. Lê Văn C</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Patient Type Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Loại bệnh nhân</label>
-            <Select
-              value={filters.patientType || 'all'}
-              onValueChange={handlePatientTypeChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn loại bệnh nhân" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="new">Bệnh nhân mới</SelectItem>
-                <SelectItem value="returning">Bệnh nhân tái khám</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Status Filter */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Trạng thái</label>
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={handleStatusChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="completed">Hoàn thành</SelectItem>
-                <SelectItem value="cancelled">Đã hủy</SelectItem>
-                <SelectItem value="pending">Chờ xử lý</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Status Selection */}
+            <div className="space-y-2">
+              <Label>Trạng thái</Label>
+              <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="completed">Hoàn thành</SelectItem>
+                  <SelectItem value="pending">Chờ xử lý</SelectItem>
+                  <SelectItem value="cancelled">Đã hủy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Clear Filters */}
-          <div className="flex items-end">
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              disabled={getActiveFiltersCount() === 0 || isLoading}
-              className="w-full"
-            >
-              Xóa bộ lọc
-            </Button>
-          </div>
-        </div>
+          {/* Advanced Filters */}
+          {showAdvanced && (
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Khoảng tuổi</Label>
+                  <Select onValueChange={(value) => handleCustomFilterChange('ageRange', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn khoảng tuổi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0-18">0-18 tuổi</SelectItem>
+                      <SelectItem value="19-35">19-35 tuổi</SelectItem>
+                      <SelectItem value="36-50">36-50 tuổi</SelectItem>
+                      <SelectItem value="51-65">51-65 tuổi</SelectItem>
+                      <SelectItem value="65+">Trên 65 tuổi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-        {/* Quick Date Presets */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Nhanh:</span>
-          {[
-            { label: 'Hôm nay', days: 0 },
-            { label: '7 ngày qua', days: 7 },
-            { label: '30 ngày qua', days: 30 },
-            { label: '3 tháng qua', days: 90 },
-            { label: 'Năm nay', days: 365 },
-          ].map((preset) => {
-            const handlePreset = () => {
-              const to = new Date();
-              const from = new Date();
-              from.setDate(from.getDate() - preset.days);
-              onFiltersChange({ ...filters, dateRange: { from, to } });
-            };
+                <div className="space-y-2">
+                  <Label>Giới tính</Label>
+                  <Select onValueChange={(value) => handleCustomFilterChange('gender', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn giới tính" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Nam</SelectItem>
+                      <SelectItem value="female">Nữ</SelectItem>
+                      <SelectItem value="other">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            return (
+                <div className="space-y-2">
+                  <Label>Khoảng doanh thu</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Từ"
+                      type="number"
+                      onChange={(e) => handleCustomFilterChange('revenueFrom', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Đến"
+                      type="number"
+                      onChange={(e) => handleCustomFilterChange('revenueTo', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <Button
-                key={preset.label}
                 variant="outline"
                 size="sm"
-                onClick={handlePreset}
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {showAdvanced ? 'Ẩn bộ lọc nâng cao' : 'Bộ lọc nâng cao'}
+              </Button>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Xóa bộ lọc
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={onSchedule}
                 disabled={isLoading}
               >
-                {preset.label}
+                <Clock className="h-4 w-4 mr-2" />
+                Lên lịch báo cáo
               </Button>
-            );
-          })}
+              
+              <Button
+                onClick={onExport}
+                disabled={isLoading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Xuất báo cáo
+              </Button>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2">
+              {filters.doctorId && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Bác sĩ: {filters.doctorId}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => handleDoctorChange('all')}
+                  />
+                </Badge>
+              )}
+              {filters.status && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Trạng thái: {filters.status}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => handleStatusChange('all')}
+                  />
+                </Badge>
+              )}
+              {Object.entries(customFilters).map(([key, value]) => (
+                <Badge key={key} variant="secondary" className="flex items-center gap-1">
+                  {key}: {value}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => {
+                      const newCustomFilters = { ...customFilters };
+                      delete newCustomFilters[key];
+                      setCustomFilters(newCustomFilters);
+                      onFiltersChange({
+                        ...filters,
+                        customFilters: newCustomFilters
+                      });
+                    }}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
