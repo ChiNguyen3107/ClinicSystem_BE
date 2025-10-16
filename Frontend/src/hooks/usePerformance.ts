@@ -1,84 +1,107 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Performance metrics interface
 interface PerformanceMetrics {
-  // Core Web Vitals
-  lcp?: number; // Largest Contentful Paint
-  fid?: number; // First Input Delay
-  cls?: number; // Cumulative Layout Shift
-  fcp?: number; // First Contentful Paint
-  ttfb?: number; // Time to First Byte
-  
-  // Custom metrics
   renderTime: number;
   memoryUsage: number;
-  componentCount: number;
-  apiResponseTime: number;
+  networkLatency: number;
   bundleSize: number;
-  
-  // User experience metrics
-  pageLoadTime: number;
-  timeToInteractive: number;
-  domContentLoaded: number;
+  cacheHitRate: number;
 }
 
-// Performance observer hook
-export const usePerformanceObserver = () => {
-  const [metrics, setMetrics] = useState<Partial<PerformanceMetrics>>({});
+// Performance monitoring hook
+export const usePerformance = () => {
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+    renderTime: 0,
+    memoryUsage: 0,
+    networkLatency: 0,
+    bundleSize: 0,
+    cacheHitRate: 0,
+  });
+
   const observerRef = useRef<PerformanceObserver | null>(null);
+  const renderStartRef = useRef<number>(0);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
-      return;
-    }
-
-    // Observe Core Web Vitals
-    const observer = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
+  // Measure render time
+  const measureRender = useCallback((componentName: string) => {
+    const start = performance.now();
+    renderStartRef.current = start;
+    
+    return () => {
+      const end = performance.now();
+      const renderTime = end - start;
       
-      entries.forEach((entry) => {
-        switch (entry.entryType) {
-          case 'largest-contentful-paint':
-            setMetrics(prev => ({
-              ...prev,
-              lcp: entry.startTime,
-            }));
-            break;
-            
-          case 'first-input':
-            setMetrics(prev => ({
-              ...prev,
-              fid: (entry as any).processingStart - entry.startTime,
-            }));
-            break;
-            
-          case 'layout-shift':
-            if (!(entry as any).hadRecentInput) {
-              setMetrics(prev => ({
-                ...prev,
-                cls: (prev.cls || 0) + (entry as any).value,
-              }));
-            }
-            break;
-            
-          case 'paint':
-            if (entry.name === 'first-contentful-paint') {
-              setMetrics(prev => ({
-                ...prev,
-                fcp: entry.startTime,
-              }));
-            }
-            break;
-        }
-      });
-    });
+      if (renderTime > 16) { // More than one frame
+        console.warn(`Slow render in ${componentName}: ${renderTime.toFixed(2)}ms`);
+      }
+      
+      setMetrics(prev => ({ ...prev, renderTime }));
+    };
+  }, []);
 
-    // Observe different entry types
-    try {
-      observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift', 'paint'] });
-      observerRef.current = observer;
-    } catch (error) {
-      console.warn('Performance Observer not supported:', error);
+  // Monitor memory usage
+  const measureMemory = useCallback(() => {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      const memoryUsage = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
+      setMetrics(prev => ({ ...prev, memoryUsage }));
+    }
+  }, []);
+
+  // Monitor network performance
+  const measureNetwork = useCallback(() => {
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    if (navigation) {
+      const networkLatency = navigation.responseEnd - navigation.requestStart;
+      setMetrics(prev => ({ ...prev, networkLatency }));
+    }
+  }, []);
+
+  // Monitor bundle size
+  const measureBundleSize = useCallback(() => {
+    const scripts = document.querySelectorAll('script[src]');
+    let totalSize = 0;
+    
+    scripts.forEach(script => {
+      const src = script.getAttribute('src');
+      if (src && src.includes('js/')) {
+        // Estimate bundle size (this is a simplified approach)
+        totalSize += 100; // Placeholder
+      }
+    });
+    
+    setMetrics(prev => ({ ...prev, bundleSize: totalSize }));
+  }, []);
+
+  // Monitor cache performance
+  const measureCache = useCallback(() => {
+    const cacheEntries = performance.getEntriesByType('resource');
+    let cacheHits = 0;
+    let totalRequests = cacheEntries.length;
+    
+    cacheEntries.forEach(entry => {
+      if (entry.transferSize === 0) {
+        cacheHits++;
+      }
+    });
+    
+    const cacheHitRate = totalRequests > 0 ? cacheHits / totalRequests : 0;
+    setMetrics(prev => ({ ...prev, cacheHitRate }));
+  }, []);
+
+  // Setup performance observer
+  useEffect(() => {
+    if ('PerformanceObserver' in window) {
+      observerRef.current = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          if (entry.entryType === 'measure') {
+            console.log(`Performance measure: ${entry.name} - ${entry.duration}ms`);
+          }
+        });
+      });
+      
+      observerRef.current.observe({ entryTypes: ['measure', 'navigation'] });
     }
 
     return () => {
@@ -88,300 +111,142 @@ export const usePerformanceObserver = () => {
     };
   }, []);
 
-  return metrics;
-};
-
-// Performance monitoring hook
-export const usePerformanceMonitor = () => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({
-    renderTime: 0,
-    memoryUsage: 0,
-    componentCount: 0,
-    apiResponseTime: 0,
-    bundleSize: 0,
-    pageLoadTime: 0,
-    timeToInteractive: 0,
-    domContentLoaded: 0,
-  });
-
-  const startTime = useRef<number>(0);
-  const renderStartTime = useRef<number>(0);
-
-  // Measure render time
-  const startRender = useCallback(() => {
-    renderStartTime.current = performance.now();
-  }, []);
-
-  const endRender = useCallback(() => {
-    const renderTime = performance.now() - renderStartTime.current;
-    setMetrics(prev => ({
-      ...prev,
-      renderTime,
-    }));
-  }, []);
-
-  // Measure API response time
-  const measureAPI = useCallback(async <T>(
-    apiCall: () => Promise<T>
-  ): Promise<T> => {
-    const start = performance.now();
-    try {
-      const result = await apiCall();
-      const responseTime = performance.now() - start;
-      setMetrics(prev => ({
-        ...prev,
-        apiResponseTime: responseTime,
-      }));
-      return result;
-    } catch (error) {
-      const responseTime = performance.now() - start;
-      setMetrics(prev => ({
-        ...prev,
-        apiResponseTime: responseTime,
-      }));
-      throw error;
-    }
-  }, []);
-
-  // Get memory usage
-  const updateMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      setMetrics(prev => ({
-        ...prev,
-        memoryUsage: memory.usedJSHeapSize,
-      }));
-    }
-  }, []);
-
-  // Get component count
-  const updateComponentCount = useCallback(() => {
-    const componentCount = document.querySelectorAll('[data-component]').length;
-    setMetrics(prev => ({
-      ...prev,
-      componentCount,
-    }));
-  }, []);
-
-  // Get bundle size (approximate)
-  const updateBundleSize = useCallback(() => {
-    const scripts = document.querySelectorAll('script[src]');
-    let totalSize = 0;
-    
-    scripts.forEach(script => {
-      const src = script.getAttribute('src');
-      if (src && !src.includes('node_modules')) {
-        // This is a simplified approach - in reality you'd need to fetch the actual size
-        totalSize += 1000; // Placeholder
-      }
-    });
-    
-    setMetrics(prev => ({
-      ...prev,
-      bundleSize: totalSize,
-    }));
-  }, []);
-
-  // Update all metrics
-  const updateMetrics = useCallback(() => {
-    updateMemoryUsage();
-    updateComponentCount();
-    updateBundleSize();
-  }, [updateMemoryUsage, updateComponentCount, updateBundleSize]);
-
-  // Initialize performance monitoring
+  // Update metrics periodically
   useEffect(() => {
-    startTime.current = performance.now();
-    
-    // Update metrics periodically
-    const interval = setInterval(updateMetrics, 5000);
-    
-    // Update metrics on page load
-    const handleLoad = () => {
-      const loadTime = performance.now() - startTime.current;
-      setMetrics(prev => ({
-        ...prev,
-        pageLoadTime: loadTime,
-        domContentLoaded: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
-      }));
-    };
+    const interval = setInterval(() => {
+      measureMemory();
+      measureNetwork();
+      measureCache();
+    }, 5000);
 
-    window.addEventListener('load', handleLoad);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('load', handleLoad);
-    };
-  }, [updateMetrics]);
+    return () => clearInterval(interval);
+  }, [measureMemory, measureNetwork, measureCache]);
+
+  // Initial measurements
+  useEffect(() => {
+    measureBundleSize();
+  }, [measureBundleSize]);
 
   return {
     metrics,
-    startRender,
-    endRender,
-    measureAPI,
-    updateMetrics,
+    measureRender,
+    measureMemory,
+    measureNetwork,
+    measureBundleSize,
+    measureCache,
   };
 };
 
-// Performance analytics hook
-export const usePerformanceAnalytics = () => {
-  const [analytics, setAnalytics] = useState({
-    pageViews: 0,
-    userInteractions: 0,
-    errors: 0,
-    slowRenders: 0,
-    apiErrors: 0,
-  });
+// Debounce hook for performance
+export const useDebounce = <T>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  const trackPageView = useCallback(() => {
-    setAnalytics(prev => ({
-      ...prev,
-      pageViews: prev.pageViews + 1,
-    }));
-  }, []);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-  const trackUserInteraction = useCallback(() => {
-    setAnalytics(prev => ({
-      ...prev,
-      userInteractions: prev.userInteractions + 1,
-    }));
-  }, []);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
 
-  const trackError = useCallback((error: Error) => {
-    console.error('Performance Analytics Error:', error);
-    setAnalytics(prev => ({
-      ...prev,
-      errors: prev.errors + 1,
-    }));
-  }, []);
-
-  const trackSlowRender = useCallback((renderTime: number) => {
-    if (renderTime > 100) { // Consider slow if > 100ms
-      setAnalytics(prev => ({
-        ...prev,
-        slowRenders: prev.slowRenders + 1,
-      }));
-    }
-  }, []);
-
-  const trackAPIError = useCallback(() => {
-    setAnalytics(prev => ({
-      ...prev,
-      apiErrors: prev.apiErrors + 1,
-    }));
-  }, []);
-
-  return {
-    analytics,
-    trackPageView,
-    trackUserInteraction,
-    trackError,
-    trackSlowRender,
-    trackAPIError,
-  };
+  return debouncedValue;
 };
 
-// Performance optimization hook
-export const usePerformanceOptimization = () => {
-  const [optimizations, setOptimizations] = useState({
-    imagesOptimized: 0,
-    componentsMemoized: 0,
-    bundlesSplitted: 0,
-    cacheHits: 0,
-  });
+// Throttle hook for performance
+export const useThrottle = <T>(value: T, delay: number): T => {
+  const [throttledValue, setThrottledValue] = useState<T>(value);
+  const lastExecuted = useRef<number>(Date.now());
 
-  const optimizeImage = useCallback((src: string) => {
-    // Implement image optimization logic
-    setOptimizations(prev => ({
-      ...prev,
-      imagesOptimized: prev.imagesOptimized + 1,
-    }));
-  }, []);
+  useEffect(() => {
+    if (Date.now() >= lastExecuted.current + delay) {
+      lastExecuted.current = Date.now();
+      setThrottledValue(value);
+    } else {
+      const timer = setTimeout(() => {
+        lastExecuted.current = Date.now();
+        setThrottledValue(value);
+      }, delay);
 
-  const memoizeComponent = useCallback((componentName: string) => {
-    setOptimizations(prev => ({
-      ...prev,
-      componentsMemoized: prev.componentsMemoized + 1,
-    }));
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [value, delay]);
 
-  const splitBundle = useCallback((bundleName: string) => {
-    setOptimizations(prev => ({
-      ...prev,
-      bundlesSplitted: prev.bundlesSplitted + 1,
-    }));
-  }, []);
-
-  const recordCacheHit = useCallback(() => {
-    setOptimizations(prev => ({
-      ...prev,
-      cacheHits: prev.cacheHits + 1,
-    }));
-  }, []);
-
-  return {
-    optimizations,
-    optimizeImage,
-    memoizeComponent,
-    splitBundle,
-    recordCacheHit,
-  };
+  return throttledValue;
 };
 
-// Performance reporting hook
-export const usePerformanceReporting = () => {
-  const reportMetrics = useCallback(async (metrics: PerformanceMetrics) => {
-    try {
-      // Send metrics to analytics service
-      const reportData = {
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        metrics,
-      };
+// Intersection observer hook for lazy loading
+export const useIntersectionObserver = (
+  elementRef: React.RefObject<Element>,
+  options: IntersectionObserverInit = {}
+) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [hasIntersected, setHasIntersected] = useState(false);
 
-      // In a real application, you would send this to your analytics service
-      console.log('Performance Report:', reportData);
-      
-      // Example: Send to analytics API
-      // await fetch('/api/analytics/performance', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(reportData),
-      // });
-    } catch (error) {
-      console.error('Failed to report performance metrics:', error);
-    }
-  }, []);
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
 
-  const reportError = useCallback(async (error: Error, context?: any) => {
-    try {
-      const errorReport = {
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
-        error: {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        },
-        context,
-      };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+        if (entry.isIntersecting && !hasIntersected) {
+          setHasIntersected(true);
+        }
+      },
+      options
+    );
 
-      console.error('Error Report:', errorReport);
-      
-      // Example: Send to error tracking service
-      // await fetch('/api/analytics/errors', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(errorReport),
-      // });
-    } catch (reportError) {
-      console.error('Failed to report error:', reportError);
-    }
-  }, []);
+    observer.observe(element);
 
-  return {
-    reportMetrics,
-    reportError,
-  };
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [elementRef, options, hasIntersected]);
+
+  return { isIntersecting, hasIntersected };
+};
+
+// Resize observer hook for responsive components
+export const useResizeObserver = (elementRef: React.RefObject<Element>) => {
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const { width, height } = entry.contentRect;
+        setDimensions({ width, height });
+      }
+    });
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [elementRef]);
+
+  return dimensions;
+};
+
+// Performance optimization hook for expensive calculations
+export const useMemoizedCallback = <T extends (...args: any[]) => any>(
+  callback: T,
+  deps: React.DependencyList
+): T => {
+  const memoizedCallback = useCallback(callback, deps);
+  return memoizedCallback;
+};
+
+// Performance optimization hook for expensive values
+export const useMemoizedValue = <T>(
+  factory: () => T,
+  deps: React.DependencyList
+): T => {
+  return useMemo(factory, deps);
 };

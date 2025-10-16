@@ -1,401 +1,309 @@
 // CSS optimization utilities
-export interface CSSOptimizationOptions {
+import React from 'react';
+
+// CSS optimization options
+interface CSSOptimizationOptions {
   minify?: boolean;
   removeUnused?: boolean;
-  criticalCSS?: boolean;
-  purgeCSS?: boolean;
-  autoprefixer?: boolean;
-  compress?: boolean;
+  criticalPath?: boolean;
+  inline?: boolean;
 }
 
-export interface CSSAnalysisResult {
-  totalSize: number;
-  unusedRules: number;
-  duplicateRules: number;
-  criticalSize: number;
-  nonCriticalSize: number;
-  recommendations: string[];
-}
+// Critical CSS extraction
+export const extractCriticalCSS = (): string => {
+  const criticalSelectors = [
+    'body',
+    'html',
+    '.container',
+    '.header',
+    '.navigation',
+    '.main-content',
+    '.sidebar',
+    '.footer',
+    '.button',
+    '.input',
+    '.form',
+    '.card',
+    '.modal',
+    '.loading',
+    '.error',
+    '.success',
+  ];
 
-// CSS optimization class
-export class CSSOptimizer {
-  private static instance: CSSOptimizer;
+  const criticalCSS: string[] = [];
+  
+  // This is a simplified version - in reality, you'd use tools like critical
+  criticalSelectors.forEach(selector => {
+    const element = document.querySelector(selector);
+    if (element) {
+      const styles = window.getComputedStyle(element);
+      const css = `${selector} { ${styles.cssText} }`;
+      criticalCSS.push(css);
+    }
+  });
+
+  return criticalCSS.join('\n');
+};
+
+// CSS purging utility
+export const purgeUnusedCSS = (css: string, usedSelectors: string[]): string => {
+  const lines = css.split('\n');
+  const purgedLines: string[] = [];
+
+  lines.forEach(line => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      purgedLines.push(line);
+      return;
+    }
+
+    // Check if selector is used
+    const isUsed = usedSelectors.some(selector => 
+      trimmedLine.includes(selector) || 
+      trimmedLine.includes('@media') ||
+      trimmedLine.includes('@keyframes') ||
+      trimmedLine.includes('@import')
+    );
+
+    if (isUsed) {
+      purgedLines.push(line);
+    }
+  });
+
+  return purgedLines.join('\n');
+};
+
+// CSS minification
+export const minifyCSS = (css: string): string => {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove comments
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/;\s*}/g, '}') // Remove semicolon before closing brace
+    .replace(/{\s*/g, '{') // Remove space after opening brace
+    .replace(/\s*}/g, '}') // Remove space before closing brace
+    .replace(/:\s*/g, ':') // Remove space after colon
+    .replace(/;\s*/g, ';') // Remove space after semicolon
+    .replace(/,\s*/g, ',') // Remove space after comma
+    .trim();
+};
+
+// CSS optimization service
+export class CSSOptimizationService {
+  private static instance: CSSOptimizationService;
   private cache = new Map<string, string>();
 
-  static getInstance(): CSSOptimizer {
-    if (!CSSOptimizer.instance) {
-      CSSOptimizer.instance = new CSSOptimizer();
+  static getInstance(): CSSOptimizationService {
+    if (!CSSOptimizationService.instance) {
+      CSSOptimizationService.instance = new CSSOptimizationService();
     }
-    return CSSOptimizer.instance;
+    return CSSOptimizationService.instance;
   }
 
-  // Optimize CSS string
-  optimizeCSS(css: string, options: CSSOptimizationOptions = {}): string {
-    const {
-      minify = true,
-      removeUnused = false,
-      criticalCSS = false,
-      purgeCSS = false,
-      autoprefixer = true,
-      compress = true,
-    } = options;
+  async optimizeCSS(
+    css: string,
+    options: CSSOptimizationOptions = {}
+  ): Promise<string> {
+    const cacheKey = `${css}_${JSON.stringify(options)}`;
+    
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
+    }
 
     let optimizedCSS = css;
 
-    // Remove comments
-    if (minify) {
-      optimizedCSS = optimizedCSS.replace(/\/\*[\s\S]*?\*\//g, '');
+    if (options.minify) {
+      optimizedCSS = minifyCSS(optimizedCSS);
     }
 
-    // Remove unnecessary whitespace
-    if (compress) {
-      optimizedCSS = optimizedCSS
-        .replace(/\s+/g, ' ')
-        .replace(/;\s*}/g, '}')
-        .replace(/\s*{\s*/g, '{')
-        .replace(/;\s*/g, ';')
-        .trim();
+    if (options.removeUnused) {
+      const usedSelectors = this.extractUsedSelectors();
+      optimizedCSS = purgeUnusedCSS(optimizedCSS, usedSelectors);
     }
 
-    // Add autoprefixer (simplified version)
-    if (autoprefixer) {
-      optimizedCSS = this.addVendorPrefixes(optimizedCSS);
-    }
-
-    // Remove unused CSS (simplified version)
-    if (removeUnused) {
-      optimizedCSS = this.removeUnusedCSS(optimizedCSS);
-    }
-
+    this.cache.set(cacheKey, optimizedCSS);
     return optimizedCSS;
   }
 
-  // Add vendor prefixes
-  private addVendorPrefixes(css: string): string {
-    const prefixes = ['-webkit-', '-moz-', '-ms-', '-o-'];
-    const properties = [
-      'transform',
-      'transition',
-      'animation',
-      'border-radius',
-      'box-shadow',
-      'flex',
-      'grid',
-    ];
-
-    let prefixedCSS = css;
-
-    properties.forEach(property => {
-      const regex = new RegExp(`(${property}):\\s*([^;]+);`, 'g');
-      prefixedCSS = prefixedCSS.replace(regex, (match, prop, value) => {
-        let result = match;
-        prefixes.forEach(prefix => {
-          result = `${prefix}${prop}: ${value};\n${result}`;
-        });
-        return result;
-      });
-    });
-
-    return prefixedCSS;
-  }
-
-  // Remove unused CSS (simplified version)
-  private removeUnusedCSS(css: string): string {
-    // This is a simplified version - in production you'd use PurgeCSS
-    const usedClasses = this.getUsedClasses();
-    const cssRules = this.parseCSSRules(css);
+  private extractUsedSelectors(): string[] {
+    const selectors: string[] = [];
     
-    const usedRules = cssRules.filter(rule => {
-      return rule.selectors.some(selector => {
-        return usedClasses.some(usedClass => 
-          selector.includes(usedClass)
-        );
-      });
-    });
-
-    return usedRules.map(rule => rule.toString()).join('\n');
-  }
-
-  // Get used CSS classes from DOM
-  private getUsedClasses(): string[] {
-    if (typeof window === 'undefined') return [];
-    
-    const classes = new Set<string>();
+    // Extract selectors from DOM
     const elements = document.querySelectorAll('*');
-    
     elements.forEach(element => {
-      const classList = element.classList;
-      classList.forEach(className => classes.add(className));
-    });
-
-    return Array.from(classes);
-  }
-
-  // Parse CSS rules
-  private parseCSSRules(css: string): Array<{
-    selectors: string[];
-    properties: string[];
-    toString(): string;
-  }> {
-    const rules: any[] = [];
-    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
-    let match;
-
-    while ((match = ruleRegex.exec(css)) !== null) {
-      const selectors = match[1].split(',').map(s => s.trim());
-      const properties = match[2].split(';').map(p => p.trim()).filter(p => p);
+      const tagName = element.tagName.toLowerCase();
+      const className = element.className;
+      const id = element.id;
       
-      rules.push({
-        selectors,
-        properties,
-        toString() {
-          return `${this.selectors.join(', ')} { ${this.properties.join('; ')} }`;
-        }
-      });
-    }
-
-    return rules;
-  }
-
-  // Analyze CSS
-  analyzeCSS(css: string): CSSAnalysisResult {
-    const rules = this.parseCSSRules(css);
-    const usedClasses = this.getUsedClasses();
-    
-    let totalSize = css.length;
-    let unusedRules = 0;
-    let duplicateRules = 0;
-    let criticalSize = 0;
-    let nonCriticalSize = 0;
-
-    // Count unused rules
-    rules.forEach(rule => {
-      const isUsed = rule.selectors.some(selector => {
-        return usedClasses.some(usedClass => 
-          selector.includes(usedClass)
-        );
-      });
-      
-      if (!isUsed) {
-        unusedRules++;
-        nonCriticalSize += rule.toString().length;
-      } else {
-        criticalSize += rule.toString().length;
+      if (tagName) selectors.push(tagName);
+      if (className) {
+        className.split(' ').forEach(cls => {
+          if (cls.trim()) selectors.push(`.${cls.trim()}`);
+        });
       }
+      if (id) selectors.push(`#${id}`);
     });
 
-    // Count duplicate rules (simplified)
-    const ruleStrings = rules.map(rule => rule.toString());
-    const uniqueRules = new Set(ruleStrings);
-    duplicateRules = ruleStrings.length - uniqueRules.size;
-
-    // Generate recommendations
-    const recommendations: string[] = [];
-    
-    if (unusedRules > 0) {
-      recommendations.push(`Remove ${unusedRules} unused CSS rules`);
-    }
-    
-    if (duplicateRules > 0) {
-      recommendations.push(`Remove ${duplicateRules} duplicate CSS rules`);
-    }
-    
-    if (nonCriticalSize > criticalSize) {
-      recommendations.push('Consider critical CSS extraction');
-    }
-    
-    if (totalSize > 100000) { // > 100KB
-      recommendations.push('CSS bundle is large, consider splitting');
-    }
-
-    return {
-      totalSize,
-      unusedRules,
-      duplicateRules,
-      criticalSize,
-      nonCriticalSize,
-      recommendations,
-    };
+    return [...new Set(selectors)];
   }
 
-  // Generate critical CSS
-  generateCriticalCSS(css: string, viewport: string = 'above-the-fold'): string {
-    const rules = this.parseCSSRules(css);
-    const criticalSelectors = this.getCriticalSelectors(viewport);
-    
-    const criticalRules = rules.filter(rule => {
-      return rule.selectors.some(selector => {
-        return criticalSelectors.some(criticalSelector => 
-          selector.includes(criticalSelector)
-        );
-      });
-    });
-
-    return criticalRules.map(rule => rule.toString()).join('\n');
-  }
-
-  // Get critical selectors
-  private getCriticalSelectors(viewport: string): string[] {
-    const commonSelectors = [
-      'body', 'html', 'head', 'title',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'p', 'a', 'img', 'div', 'span',
-      'button', 'input', 'form', 'label',
-      'nav', 'header', 'footer', 'main',
-      'section', 'article', 'aside',
-    ];
-
-    if (viewport === 'above-the-fold') {
-      return [
-        ...commonSelectors,
-        '.container', '.wrapper', '.content',
-        '.header', '.navbar', '.hero',
-        '.btn', '.button', '.link',
-      ];
-    }
-
-    return commonSelectors;
-  }
-
-  // Inline critical CSS
-  inlineCriticalCSS(css: string): string {
-    const criticalCSS = this.generateCriticalCSS(css);
-    return `<style>${criticalCSS}</style>`;
-  }
-
-  // Preload non-critical CSS
-  preloadCSS(href: string): string {
-    return `<link rel="preload" href="${href}" as="style" onload="this.onload=null;this.rel='stylesheet'">`;
-  }
-
-  // Clear cache
   clearCache(): void {
     this.cache.clear();
   }
 }
 
-// CSS optimization hook
-export const useCSSOptimization = () => {
-  const optimizer = CSSOptimizer.getInstance();
-
-  const optimizeCSS = useCallback(
-    (css: string, options?: CSSOptimizationOptions) => {
-      return optimizer.optimizeCSS(css, options);
-    },
-    [optimizer]
-  );
-
-  const analyzeCSS = useCallback(
-    (css: string) => {
-      return optimizer.analyzeCSS(css);
-    },
-    [optimizer]
-  );
-
-  const generateCriticalCSS = useCallback(
-    (css: string, viewport?: string) => {
-      return optimizer.generateCriticalCSS(css, viewport);
-    },
-    [optimizer]
-  );
-
-  return {
-    optimizeCSS,
-    analyzeCSS,
-    generateCriticalCSS,
-  };
-};
-
-// CSS optimization component
-export const OptimizedCSS: React.FC<{
-  css: string;
-  critical?: boolean;
-  inline?: boolean;
-  options?: CSSOptimizationOptions;
-}> = ({ css, critical = false, inline = false, options = {} }) => {
-  const { optimizeCSS, generateCriticalCSS } = useCSSOptimization();
-  const [optimizedCSS, setOptimizedCSS] = useState('');
-
-  useEffect(() => {
-    let processedCSS = css;
-    
-    if (critical) {
-      processedCSS = generateCriticalCSS(css);
-    }
-    
-    const optimized = optimizeCSS(processedCSS, options);
-    setOptimizedCSS(optimized);
-  }, [css, critical, options, optimizeCSS, generateCriticalCSS]);
-
-  if (inline) {
-    return React.createElement('style', { dangerouslySetInnerHTML: { __html: optimizedCSS } });
+// CSS loading optimization
+export const optimizeCSSLoading = () => {
+  // Preload critical CSS
+  const criticalCSS = extractCriticalCSS();
+  if (criticalCSS) {
+    const style = document.createElement('style');
+    style.textContent = criticalCSS;
+    document.head.appendChild(style);
   }
 
-  return null;
+  // Defer non-critical CSS
+  const stylesheets = document.querySelectorAll('link[rel="stylesheet"]');
+  stylesheets.forEach(link => {
+    if (!link.getAttribute('data-critical')) {
+      link.setAttribute('media', 'print');
+      (link as HTMLLinkElement).onload = () => {
+        link.setAttribute('media', 'all');
+      };
+    }
+  });
 };
 
-// CSS optimization utilities
-export const cssOptimizationUtils = {
-  // Check if CSS is critical
-  isCriticalCSS(selector: string): boolean {
-    const criticalSelectors = [
-      'body', 'html', 'head', 'title',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'p', 'a', 'img', 'div', 'span',
-      'button', 'input', 'form', 'label',
-      'nav', 'header', 'footer', 'main',
-    ];
-
-    return criticalSelectors.some(critical => 
-      selector.includes(critical)
-    );
-  },
-
-  // Get CSS performance score
-  getCSSPerformanceScore(analysis: CSSAnalysisResult): number {
-    let score = 100;
-    
-    // Penalize for unused CSS
-    if (analysis.unusedRules > 0) {
-      score -= Math.min(30, analysis.unusedRules * 2);
+// CSS-in-JS optimization
+export const optimizeCSSInJS = (styles: Record<string, any>) => {
+  const optimized: Record<string, any> = {};
+  
+  Object.entries(styles).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      optimized[key] = minifyCSS(value);
+    } else if (typeof value === 'object' && value !== null) {
+      optimized[key] = optimizeCSSInJS(value);
+    } else {
+      optimized[key] = value;
     }
-    
-    // Penalize for duplicate CSS
-    if (analysis.duplicateRules > 0) {
-      score -= Math.min(20, analysis.duplicateRules * 3);
-    }
-    
-    // Penalize for large CSS
-    if (analysis.totalSize > 100000) { // > 100KB
-      score -= 20;
-    }
-    
-    // Bonus for critical CSS
-    if (analysis.criticalSize > analysis.nonCriticalSize) {
-      score += 10;
-    }
+  });
+  
+  return optimized;
+};
 
-    return Math.max(0, Math.min(100, score));
-  },
-
-  // Generate CSS report
-  generateCSSReport(analysis: CSSAnalysisResult): string {
-    let report = '# CSS Optimization Report\n\n';
-    report += `## Analysis Results\n`;
-    report += `- Total Size: ${(analysis.totalSize / 1024).toFixed(2)}KB\n`;
-    report += `- Unused Rules: ${analysis.unusedRules}\n`;
-    report += `- Duplicate Rules: ${analysis.duplicateRules}\n`;
-    report += `- Critical Size: ${(analysis.criticalSize / 1024).toFixed(2)}KB\n`;
-    report += `- Non-Critical Size: ${(analysis.nonCriticalSize / 1024).toFixed(2)}KB\n\n`;
-    
-    report += `## Recommendations\n`;
-    analysis.recommendations.forEach(rec => {
-      report += `- ${rec}\n`;
+// CSS performance monitoring
+export const monitorCSSPerformance = () => {
+  const observer = new PerformanceObserver((list) => {
+    const entries = list.getEntries();
+    entries.forEach(entry => {
+      if (entry.entryType === 'resource') {
+        const resource = entry as PerformanceResourceTiming;
+        if (resource.name.includes('.css')) {
+          console.log(`CSS loaded: ${resource.name} (${resource.transferSize} bytes, ${resource.duration}ms)`);
+        }
+      }
     });
-    
-    const score = this.getCSSPerformanceScore(analysis);
-    report += `\n## Performance Score: ${score}/100\n`;
-    
-    return report;
-  },
+  });
+
+  observer.observe({ entryTypes: ['resource'] });
+};
+
+// CSS bundle analysis
+export const analyzeCSSBundle = () => {
+  const stylesheets = document.querySelectorAll('link[rel="stylesheet"]');
+  const inlineStyles = document.querySelectorAll('style');
+  
+  const analysis = {
+    externalStylesheets: Array.from(stylesheets).map(link => ({
+      href: link.getAttribute('href'),
+      size: 'unknown',
+    })),
+    inlineStyles: Array.from(inlineStyles).map(style => ({
+      content: style.textContent?.substring(0, 100) + '...',
+      size: style.textContent?.length || 0,
+    })),
+    totalExternal: stylesheets.length,
+    totalInline: inlineStyles.length,
+  };
+
+  return analysis;
+};
+
+// CSS optimization recommendations
+export const getCSSOptimizationRecommendations = () => {
+  const analysis = analyzeCSSBundle();
+  const recommendations = [];
+  
+  if (analysis.totalExternal > 5) {
+    recommendations.push('Consider merging external stylesheets to reduce HTTP requests');
+  }
+  
+  if (analysis.totalInline > 3) {
+    recommendations.push('Consider moving inline styles to external stylesheets');
+  }
+  
+  return recommendations;
+};
+
+// CSS critical path optimization
+export const optimizeCriticalPath = () => {
+  // Extract critical CSS
+  const criticalCSS = extractCriticalCSS();
+  
+  // Inline critical CSS
+  const style = document.createElement('style');
+  style.textContent = criticalCSS;
+  style.setAttribute('data-critical', 'true');
+  document.head.insertBefore(style, document.head.firstChild);
+  
+  // Defer non-critical CSS
+  const stylesheets = document.querySelectorAll('link[rel="stylesheet"]:not([data-critical])');
+  stylesheets.forEach(link => {
+    link.setAttribute('media', 'print');
+    (link as HTMLLinkElement).onload = () => {
+      link.setAttribute('media', 'all');
+    };
+  });
+};
+
+// CSS compression
+export const compressCSS = (css: string): string => {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove comments
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/;\s*}/g, '}') // Remove semicolon before closing brace
+    .replace(/{\s*/g, '{') // Remove space after opening brace
+    .replace(/\s*}/g, '}') // Remove space before closing brace
+    .replace(/:\s*/g, ':') // Remove space after colon
+    .replace(/;\s*/g, ';') // Remove space after semicolon
+    .replace(/,\s*/g, ',') // Remove space after comma
+    .trim();
+};
+
+// CSS optimization hook
+export const useCSSOptimization = (css: string, options: CSSOptimizationOptions = {}) => {
+  const [optimizedCSS, setOptimizedCSS] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const optimize = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const service = CSSOptimizationService.getInstance();
+        const optimized = await service.optimizeCSS(css, options);
+        setOptimizedCSS(optimized);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setOptimizedCSS(css); // Fallback to original
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    optimize();
+  }, [css, options]);
+
+  return { optimizedCSS, isLoading, error };
 };

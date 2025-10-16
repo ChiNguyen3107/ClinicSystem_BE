@@ -1,373 +1,344 @@
 // Image optimization utilities
-export interface ImageOptimizationOptions {
+import { imageCache } from './cache';
+
+// Image optimization options
+interface ImageOptimizationOptions {
   quality?: number;
   format?: 'webp' | 'jpeg' | 'png' | 'avif';
   width?: number;
   height?: number;
   lazy?: boolean;
-  placeholder?: boolean;
-  blur?: boolean;
+  placeholder?: string;
 }
 
-export interface OptimizedImageProps {
-  src: string;
-  alt: string;
-  width?: number;
-  height?: number;
-  className?: string;
-  priority?: boolean;
-  quality?: number;
-  format?: 'webp' | 'jpeg' | 'png' | 'avif';
-  sizes?: string;
-  placeholder?: 'blur' | 'empty';
-  blurDataURL?: string;
-}
+// Optimize image URL
+export const optimizeImageUrl = (
+  src: string,
+  options: ImageOptimizationOptions = {}
+): string => {
+  const {
+    quality = 80,
+    format = 'webp',
+    width,
+    height,
+  } = options;
 
-// Image optimization class
-export class ImageOptimizer {
-  private static instance: ImageOptimizer;
-  private cache = new Map<string, string>();
-  private lazyObserver?: IntersectionObserver;
-
-  static getInstance(): ImageOptimizer {
-    if (!ImageOptimizer.instance) {
-      ImageOptimizer.instance = new ImageOptimizer();
-    }
-    return ImageOptimizer.instance;
+  // If it's already an optimized URL, return as is
+  if (src.includes('optimized') || src.includes('format=')) {
+    return src;
   }
 
-  // Generate optimized image URL
-  generateOptimizedURL(
+  // For external images, you might want to use a service like Cloudinary or ImageKit
+  if (src.startsWith('http')) {
+    const params = new URLSearchParams();
+    params.set('format', format);
+    params.set('quality', quality.toString());
+    if (width) params.set('width', width.toString());
+    if (height) params.set('height', height.toString());
+    
+    return `${src}?${params.toString()}`;
+  }
+
+  return src;
+};
+
+// Lazy load image with optimization
+export const LazyOptimizedImage: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+  options?: ImageOptimizationOptions;
+  onLoad?: () => void;
+  onError?: () => void;
+}> = ({ src, alt, className, options = {}, onLoad, onError }) => {
+  const [imageSrc, setImageSrc] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
+
+  // Check cache first
+  React.useEffect(() => {
+    const cached = imageCache.get(src);
+    if (cached) {
+      setImageSrc(cached);
+      setIsLoading(false);
+      return;
+    }
+
+    // Optimize image URL
+    const optimizedSrc = optimizeImageUrl(src, options);
+    setImageSrc(optimizedSrc);
+  }, [src, options]);
+
+  const handleLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+    imageCache.set(src, imageSrc);
+    onLoad?.();
+  };
+
+  const handleError = () => {
+    setIsLoading(false);
+    setHasError(true);
+    onError?.();
+  };
+
+  if (hasError) {
+    return (
+      <div className={`flex items-center justify-center bg-gray-100 ${className}`}>
+        <span className="text-gray-500 text-sm">Lỗi tải hình ảnh</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {isLoading && (
+        <div className="flex items-center justify-center bg-gray-100 h-32">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      )}
+      <img
+        ref={imgRef}
+        src={imageSrc}
+        alt={alt}
+        onLoad={handleLoad}
+        onError={handleError}
+        style={{ display: isLoading ? 'none' : 'block' }}
+        loading={options.lazy ? 'lazy' : 'eager'}
+        className={className}
+      />
+    </div>
+  );
+};
+
+// Image preloader
+export const preloadImage = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const cached = imageCache.get(src);
+    if (cached) {
+      resolve(cached);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      imageCache.set(src, src);
+      resolve(src);
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
+// Batch preload images
+export const preloadImages = async (srcs: string[]): Promise<string[]> => {
+  const promises = srcs.map(src => preloadImage(src));
+  return Promise.allSettled(promises).then(results => {
+    return results
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<string>).value);
+  });
+};
+
+// Responsive image component
+export const ResponsiveImage: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+  sizes?: string;
+  srcSet?: string;
+  options?: ImageOptimizationOptions;
+}> = ({ src, alt, className, sizes, srcSet, options = {} }) => {
+  const [imageSrc, setImageSrc] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const optimizedSrc = optimizeImageUrl(src, options);
+    setImageSrc(optimizedSrc);
+  }, [src, options]);
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
+  return (
+    <div className={className}>
+      {isLoading && (
+        <div className="flex items-center justify-center bg-gray-100 h-32">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      )}
+      <img
+        src={imageSrc}
+        alt={alt}
+        sizes={sizes}
+        srcSet={srcSet}
+        onLoad={handleLoad}
+        loading="lazy"
+        style={{ display: isLoading ? 'none' : 'block' }}
+        className={className}
+      />
+    </div>
+  );
+};
+
+// Image optimization service
+export class ImageOptimizationService {
+  private static instance: ImageOptimizationService;
+  private cache = new Map<string, string>();
+
+  static getInstance(): ImageOptimizationService {
+    if (!ImageOptimizationService.instance) {
+      ImageOptimizationService.instance = new ImageOptimizationService();
+    }
+    return ImageOptimizationService.instance;
+  }
+
+  async optimizeImage(
     src: string,
     options: ImageOptimizationOptions = {}
-  ): string {
-    const {
-      quality = 80,
-      format = 'webp',
-      width,
-      height,
-    } = options;
-
-    // Check cache first
-    const cacheKey = `${src}-${quality}-${format}-${width}-${height}`;
+  ): Promise<string> {
+    const cacheKey = `${src}_${JSON.stringify(options)}`;
+    
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!;
     }
 
-    // In a real implementation, you would use an image optimization service
-    // like Cloudinary, ImageKit, or Next.js Image Optimization
-    let optimizedURL = src;
-
-    // Add query parameters for optimization
-    const params = new URLSearchParams();
-    
-    if (quality !== 80) params.set('q', quality.toString());
-    if (format !== 'webp') params.set('f', format);
-    if (width) params.set('w', width.toString());
-    if (height) params.set('h', height.toString());
-
-    if (params.toString()) {
-      optimizedURL += (src.includes('?') ? '&' : '?') + params.toString();
+    try {
+      const optimizedSrc = optimizeImageUrl(src, options);
+      this.cache.set(cacheKey, optimizedSrc);
+      return optimizedSrc;
+    } catch (error) {
+      console.error('Failed to optimize image:', error);
+      return src;
     }
-
-    // Cache the result
-    this.cache.set(cacheKey, optimizedURL);
-    return optimizedURL;
   }
 
-  // Generate responsive image sources
-  generateResponsiveSources(
-    src: string,
-    sizes: number[] = [320, 640, 768, 1024, 1280, 1920],
+  async batchOptimizeImages(
+    srcs: string[],
     options: ImageOptimizationOptions = {}
-  ): { src: string; width: number; media?: string }[] {
-    return sizes.map((width, index) => ({
-      src: this.generateOptimizedURL(src, { ...options, width }),
-      width,
-      media: index === 0 ? undefined : `(min-width: ${width}px)`,
-    }));
+  ): Promise<string[]> {
+    const promises = srcs.map(src => this.optimizeImage(src, options));
+    return Promise.all(promises);
   }
 
-  // Generate blur placeholder
-  generateBlurPlaceholder(width: number = 10, height: number = 10): string {
-    // Generate a simple blur placeholder
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    
-    if (ctx) {
-      // Create a simple gradient blur
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#f3f4f6');
-      gradient.addColorStop(1, '#e5e7eb');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    return canvas.toDataURL('image/jpeg', 0.1);
-  }
-
-  // Lazy load images
-  setupLazyLoading(): void {
-    if (typeof window === 'undefined') return;
-
-    this.lazyObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const img = entry.target as HTMLImageElement;
-            const src = img.dataset.src;
-            if (src) {
-              img.src = src;
-              img.removeAttribute('data-src');
-              this.lazyObserver?.unobserve(img);
-            }
-          }
-        });
-      },
-      {
-        rootMargin: '50px',
-        threshold: 0.1,
-      }
-    );
-  }
-
-  // Observe image for lazy loading
-  observeImage(img: HTMLImageElement): void {
-    if (this.lazyObserver) {
-      this.lazyObserver.observe(img);
-    }
-  }
-
-  // Preload critical images
-  preloadImage(src: string, options: ImageOptimizationOptions = {}): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = reject;
-      img.src = this.generateOptimizedURL(src, options);
-    });
-  }
-
-  // Get image dimensions
-  getImageDimensions(src: string): Promise<{ width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        resolve({
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        });
-      };
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  // Optimize image for different devices
-  getDeviceOptimizedImage(
-    src: string,
-    deviceType: 'mobile' | 'tablet' | 'desktop' = 'desktop'
-  ): string {
-    const deviceConfigs = {
-      mobile: { width: 375, quality: 75, format: 'webp' as const },
-      tablet: { width: 768, quality: 80, format: 'webp' as const },
-      desktop: { width: 1200, quality: 85, format: 'webp' as const },
-    };
-
-    const config = deviceConfigs[deviceType];
-    return this.generateOptimizedURL(src, config);
-  }
-
-  // Clear cache
   clearCache(): void {
     this.cache.clear();
   }
 
-  // Get cache stats
-  getCacheStats(): { size: number; entries: string[] } {
+  getCacheStats() {
     return {
       size: this.cache.size,
-      entries: Array.from(this.cache.keys()),
+      keys: Array.from(this.cache.keys()),
     };
   }
 }
 
-// React hook for image optimization
-export const useImageOptimization = () => {
-  const optimizer = ImageOptimizer.getInstance();
+// Image optimization hook
+export const useImageOptimization = (src: string, options: ImageOptimizationOptions = {}) => {
+  const [optimizedSrc, setOptimizedSrc] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const optimizeImage = useCallback(
-    (src: string, options: ImageOptimizationOptions = {}) => {
-      return optimizer.generateOptimizedURL(src, options);
-    },
-    [optimizer]
-  );
+  React.useEffect(() => {
+    const optimize = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const service = ImageOptimizationService.getInstance();
+        const optimized = await service.optimizeImage(src, options);
+        setOptimizedSrc(optimized);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setOptimizedSrc(src); // Fallback to original
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const getResponsiveImages = useCallback(
-    (src: string, sizes?: number[], options?: ImageOptimizationOptions) => {
-      return optimizer.generateResponsiveSources(src, sizes, options);
-    },
-    [optimizer]
-  );
+    optimize();
+  }, [src, options]);
 
-  const preloadImage = useCallback(
-    (src: string, options?: ImageOptimizationOptions) => {
-      return optimizer.preloadImage(src, options);
-    },
-    [optimizer]
-  );
-
-  const getBlurPlaceholder = useCallback(
-    (width?: number, height?: number) => {
-      return optimizer.generateBlurPlaceholder(width, height);
-    },
-    [optimizer]
-  );
-
-  return {
-    optimizeImage,
-    getResponsiveImages,
-    preloadImage,
-    getBlurPlaceholder,
-  };
+  return { optimizedSrc, isLoading, error };
 };
 
-// Image optimization component
-export const OptimizedImage: React.FC<OptimizedImageProps> = ({
-  src,
-  alt,
-  width,
-  height,
-  className = '',
-  priority = false,
-  quality = 80,
-  format = 'webp',
-  sizes,
-  placeholder = 'blur',
-  blurDataURL,
-}) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState<string>('');
-  const imgRef = useRef<HTMLImageElement>(null);
-  const optimizer = ImageOptimizer.getInstance();
-
-  // Generate optimized source
-  const optimizedSrc = useMemo(() => {
-    return optimizer.generateOptimizedURL(src, {
-      quality,
-      format,
-      width,
-      height,
-    });
-  }, [src, quality, format, width, height, optimizer]);
-
-  // Generate blur placeholder
-  const placeholderSrc = useMemo(() => {
-    if (blurDataURL) return blurDataURL;
-    if (placeholder === 'blur') {
-      return optimizer.generateBlurPlaceholder(width, height);
-    }
-    return '';
-  }, [blurDataURL, placeholder, width, height, optimizer]);
-
-  // Handle image load
-  const handleLoad = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
-  // Handle image error
-  const handleError = useCallback(() => {
-    setIsLoading(false);
-    setHasError(true);
-  }, []);
-
-  // Setup lazy loading
-  useEffect(() => {
-    if (!priority && imgRef.current) {
-      optimizer.observeImage(imgRef.current);
-    }
-  }, [priority, optimizer]);
-
-  // Preload critical images
-  useEffect(() => {
-    if (priority) {
-      optimizer.preloadImage(src, { quality, format, width, height });
-    }
-  }, [priority, src, quality, format, width, height, optimizer]);
-
-  if (hasError) {
-    return React.createElement('div', {
-      className: `bg-gray-200 flex items-center justify-center ${className}`,
-      style: { width, height }
-    }, React.createElement('span', {
-      className: 'text-gray-500 text-sm'
-    }, 'Không thể tải hình ảnh'));
-  }
-
-  return React.createElement('div', {
-    className: `relative ${className}`
-  }, [
-    isLoading && placeholderSrc && React.createElement('img', {
-      src: placeholderSrc,
-      alt: '',
-      className: 'absolute inset-0 w-full h-full object-cover blur-sm',
-      style: { width, height }
-    }),
-    React.createElement('img', {
-      ref: imgRef,
-      src: priority ? optimizedSrc : undefined,
-      'data-src': !priority ? optimizedSrc : undefined,
-      alt: alt,
-      width: width,
-      height: height,
-      sizes: sizes,
-      loading: priority ? 'eager' : 'lazy',
-      onLoad: handleLoad,
-      onError: handleError,
-      className: `transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`,
-      style: { width, height }
-    })
-  ]);
-};
-
-// Image optimization utilities
-export const imageOptimizationUtils = {
-  // Check if image format is supported
-  isFormatSupported(format: string): boolean {
-    if (typeof window === 'undefined') return false;
-    
+// Image compression utility
+export const compressImage = (
+  file: File,
+  quality: number = 0.8,
+  maxWidth: number = 1920,
+  maxHeight: number = 1080
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    
-    try {
-      return canvas.toDataURL(`image/${format}`).indexOf(`data:image/${format}`) === 0;
-    } catch {
-      return false;
-    }
-  },
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
 
-  // Get optimal format for browser
-  getOptimalFormat(): 'webp' | 'jpeg' | 'png' | 'avif' {
-    if (this.isFormatSupported('avif')) return 'avif';
-    if (this.isFormatSupported('webp')) return 'webp';
-    return 'jpeg';
-  },
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img;
+      
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width *= ratio;
+        height *= ratio;
+      }
 
-  // Calculate optimal quality based on file size
-  calculateOptimalQuality(fileSize: number, targetSize: number): number {
-    const ratio = targetSize / fileSize;
-    return Math.max(10, Math.min(100, Math.round(ratio * 100)));
-  },
+      canvas.width = width;
+      canvas.height = height;
 
-  // Generate responsive sizes string
-  generateSizesString(breakpoints: { [key: string]: number }): string {
-    return Object.entries(breakpoints)
-      .sort(([, a], [, b]) => a - b)
-      .map(([size, width]) => `(max-width: ${width}px) ${size}px`)
-      .join(', ');
-  },
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Failed to compress image'));
+          }
+        },
+        file.type,
+        quality
+      );
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+// Image format detection
+export const detectImageFormat = (file: File): string => {
+  return file.type.split('/')[1] || 'unknown';
+};
+
+// Image size validation
+export const validateImageSize = (
+  file: File,
+  maxSize: number = 5 * 1024 * 1024 // 5MB
+): boolean => {
+  return file.size <= maxSize;
+};
+
+// Image dimensions validation
+export const validateImageDimensions = (
+  file: File,
+  maxWidth: number = 4096,
+  maxHeight: number = 4096
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(img.width <= maxWidth && img.height <= maxHeight);
+    };
+    img.onerror = () => resolve(false);
+    img.src = URL.createObjectURL(file);
+  });
 };
