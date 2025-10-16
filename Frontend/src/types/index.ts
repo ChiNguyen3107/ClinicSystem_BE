@@ -503,6 +503,8 @@ export interface ApiResponse<T> {
   message: string;
   data: T;
   errors?: string[];
+  timestamp?: string;
+  path?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -513,6 +515,47 @@ export interface PaginatedResponse<T> {
   number: number;
   first: boolean;
   last: boolean;
+  sort?: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  pageable?: {
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    pageNumber: number;
+    pageSize: number;
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+}
+
+export interface ErrorResponse {
+  success: false;
+  message: string;
+  errors: string[];
+  timestamp: string;
+  path: string;
+  status: number;
+  details?: Record<string, any>;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  rejectedValue?: any;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, any>;
+  timestamp: string;
+  path: string;
 }
 
 // Auth types
