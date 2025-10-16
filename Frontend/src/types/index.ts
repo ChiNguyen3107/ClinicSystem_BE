@@ -332,3 +332,25 @@ export interface DoctorFilters {
   search?: string;
   isActive?: boolean;
 }
+
+// Dashboard types
+export interface DashboardStats {
+  totalPatients: number;
+  totalPatientsChange: number;
+  todayAppointments: number;
+  pendingAppointments: number;
+  activeDoctors: number;
+  doctorsWithSchedule: number;
+  monthlyRevenue: number;
+  revenueGrowth: number;
+  successRate: number;
+  activeRooms: number;
+}
+
+export interface DashboardStatsResponse {
+  success: boolean;
+  data: DashboardStats;
+  message: string;
+}
+
+export type DashboardPeriod = 'today' | 'week' | 'month' | 'year';
