@@ -10,7 +10,8 @@ import {
   CreditCard,
   Settings,
   BarChart3,
-  Stethoscope
+  Stethoscope,
+  Package
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useUIStore } from '@/store/ui.store';
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Lịch hẹn', href: '/appointments', icon: Calendar },
   { name: 'Bác sĩ', href: '/doctors', icon: UserCheck },
   { name: 'Khám bệnh', href: '/visits', icon: Stethoscope },
+  { name: 'Dịch vụ', href: '/services', icon: Package },
   { name: 'Thuốc', href: '/medications', icon: Pill },
   { name: 'Hóa đơn', href: '/billing', icon: CreditCard },
   { name: 'Báo cáo', href: '/reports', icon: BarChart3 },

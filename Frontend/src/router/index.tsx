@@ -14,6 +14,7 @@ const DoctorWizard = React.lazy(() => import('@/pages/doctors/DoctorWizard').the
 const DoctorDetail = React.lazy(() => import('@/pages/doctors/DoctorDetail').then(module => ({ default: module.DoctorDetail })));
 const VisitsPage = React.lazy(() => import('@/pages/visits/VisitsPage').then(module => ({ default: module.VisitsPage })));
 const VisitEditor = React.lazy(() => import('@/pages/visits/VisitEditor').then(module => ({ default: module.VisitEditor })));
+const ServicesPage = React.lazy(() => import('@/pages/services/ServicesPage').then(module => ({ default: module.ServicesPage })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -148,6 +149,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <VisitEditor />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'services',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <ServicesPage />
           </Suspense>
         ),
       },

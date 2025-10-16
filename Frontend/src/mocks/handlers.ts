@@ -5,7 +5,8 @@ import type { Schedule, WeeklySchedule } from '@/types/schedule';
 import type { Appointment, AppointmentStats } from '@/types/appointment';
 import { AppointmentStatus } from '@/types/appointment';
 import type { Visit, VisitFilter } from '@/types/visit';
-import type { ServiceOrder, MedicalService } from '@/types/service';
+import type { ServiceOrder } from '@/types/service';
+import { medicalServiceHandlers, indicatorHandlers } from './services';
 import type { Prescription, Medication, Billing } from '@/types/medication';
 
 // Mock data
@@ -864,34 +865,6 @@ const mockVisits: Visit[] = [
   }
 ];
 
-const mockMedicalServices: MedicalService[] = [
-  {
-    id: '1',
-    name: 'Khám tim mạch',
-    description: 'Khám và đánh giá chức năng tim mạch',
-    category: 'EXAMINATION',
-    price: 200000,
-    unit: 'lần',
-    isActive: true,
-    indicators: [
-      { id: '1', name: 'Huyết áp', type: 'TEXT', required: true, unit: 'mmHg' },
-      { id: '2', name: 'Nhịp tim', type: 'NUMBER', required: true, unit: 'bpm' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Xét nghiệm máu',
-    description: 'Xét nghiệm công thức máu cơ bản',
-    category: 'DIAGNOSTIC',
-    price: 150000,
-    unit: 'lần',
-    isActive: true,
-    indicators: [
-      { id: '3', name: 'Hồng cầu', type: 'NUMBER', required: true, unit: '10^12/L' },
-      { id: '4', name: 'Bạch cầu', type: 'NUMBER', required: true, unit: '10^9/L' }
-    ]
-  }
-];
 
 const mockMedications: Medication[] = [
   {
@@ -925,7 +898,22 @@ const mockServiceOrders: ServiceOrder[] = [
     id: '1',
     visitId: '1',
     serviceId: '1',
-    service: mockMedicalServices[0],
+    service: {
+      id: '1',
+      name: 'Khám tim mạch',
+      description: 'Khám và đánh giá chức năng tim mạch',
+      category: 'EXAMINATION',
+      price: 200000,
+      unit: 'lần',
+      duration: 30,
+      preparation: '',
+      notes: '',
+      status: 'ACTIVE',
+      indicators: [],
+      priceHistory: [],
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z'
+    },
     performerId: '1',
     performer: {
       id: '1',
@@ -934,10 +922,7 @@ const mockServiceOrders: ServiceOrder[] = [
     },
     status: 'COMPLETED',
     result: 'Huyết áp: 140/90 mmHg, Nhịp tim: 80 bpm',
-    indicators: [
-      { indicatorId: '1', indicator: mockMedicalServices[0].indicators![0], value: '140/90' },
-      { indicatorId: '2', indicator: mockMedicalServices[0].indicators![1], value: 80 }
-    ],
+    indicators: [],
     notes: 'Bệnh nhân cần theo dõi huyết áp thường xuyên',
     createdAt: '2024-01-20T08:30:00Z',
     updatedAt: '2024-01-20T09:00:00Z'
@@ -1090,15 +1075,26 @@ export const visitHandlers = [
 
   http.post('/api/visits/:visitId/service-orders', async ({ params, request }) => {
     const body = await request.json() as any;
-    const service = mockMedicalServices.find(s => s.id === body.serviceId);
-    if (!service) {
-      return HttpResponse.json({ error: 'Service not found' }, { status: 404 });
-    }
     const newOrder: ServiceOrder = {
       id: (mockServiceOrders.length + 1).toString(),
       visitId: params.visitId as string,
       serviceId: body.serviceId,
-      service,
+      service: {
+        id: body.serviceId,
+        name: 'Khám tim mạch',
+        description: 'Khám và đánh giá chức năng tim mạch',
+        category: 'EXAMINATION',
+        price: 200000,
+        unit: 'lần',
+        duration: 30,
+        preparation: '',
+        notes: '',
+        status: 'ACTIVE',
+        indicators: [],
+        priceHistory: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
       performerId: body.performerId,
       status: 'PENDING',
       notes: body.notes,
@@ -1128,18 +1124,6 @@ export const visitHandlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // Medical Services
-  http.get('/api/medical-services', () => {
-    return HttpResponse.json(mockMedicalServices);
-  }),
-
-  http.get('/api/medical-services/:id', ({ params }) => {
-    const service = mockMedicalServices.find(s => s.id === params.id);
-    if (!service) {
-      return HttpResponse.json({ error: 'Service not found' }, { status: 404 });
-    }
-    return HttpResponse.json(service);
-  }),
 
   // Medications
   http.get('/api/medications', () => {
@@ -2417,8 +2401,15 @@ export const handlers = [
   }),
 
   // Visit handlers
-  ...visitHandlers
+  ...visitHandlers,
+  
+  // Medical Services handlers
+  ...medicalServiceHandlers,
+  
+  // Indicators handlers
+  ...indicatorHandlers
 ];
+
 
 // Helper function to calculate end time
 function calculateEndTime(startTime: string, duration: number): string {
