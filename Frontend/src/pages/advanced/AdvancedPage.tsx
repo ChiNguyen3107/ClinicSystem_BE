@@ -13,7 +13,9 @@ import {
   Sparkles,
   Activity,
   Database,
-  Shield
+  Shield,
+  Pill,
+  Heart
 } from 'lucide-react';
 
 // Import advanced components
@@ -22,6 +24,11 @@ import { VideoCallPanel } from '@/components/advanced/VideoCallPanel';
 import { DeviceList } from '@/components/advanced/DeviceList';
 import { InsightCards } from '@/components/advanced/InsightCards';
 import { WebhookTable } from '@/components/advanced/WebhookTable';
+import AIDiagnosis from '@/components/advanced/AIDiagnosis';
+import MedicationInteractions from '@/components/advanced/MedicationInteractions';
+import PredictiveAnalytics from '@/components/advanced/PredictiveAnalytics';
+import HealthInsights from '@/components/advanced/HealthInsights';
+import IntegrationFeatures from '@/components/advanced/IntegrationFeatures';
 
 const AdvancedPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('ai');
@@ -62,7 +69,7 @@ const AdvancedPage: React.FC = () => {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Tính năng nâng cao</h1>
         <p className="text-muted-foreground">
-          Các module AI, Telemedicine, IoT, Analytics và Integration Hub
+          AI Diagnosis, Medication Interactions, Predictive Analytics, Health Insights và Integration Features
         </p>
       </div>
 
@@ -70,80 +77,80 @@ const AdvancedPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Assistant</CardTitle>
+            <CardTitle className="text-sm font-medium">AI Diagnosis</CardTitle>
             <Bot className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">Chat Bot</span>
+              <span className="text-2xl font-bold">AI</span>
               {getStatusBadge(moduleStatus.ai.status)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Gợi ý chẩn đoán, tư vấn thuốc
+              Chẩn đoán thông minh, phân tích triệu chứng
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Telemedicine</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Tương tác thuốc</CardTitle>
+            <Pill className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">Video Call</span>
+              <span className="text-2xl font-bold">Drug</span>
               {getStatusBadge(moduleStatus.telemedicine.status)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Khám từ xa, chia sẻ màn hình
+              Kiểm tra tương tác, cảnh báo
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IoT Devices</CardTitle>
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">12</span>
-              {getStatusBadge(moduleStatus.iot.status)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Thiết bị y tế kết nối
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Analytics</CardTitle>
+            <CardTitle className="text-sm font-medium">Phân tích dự đoán</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">BI</span>
+              <span className="text-2xl font-bold">Analytics</span>
               {getStatusBadge(moduleStatus.analytics.status)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Phân tích dự đoán, báo cáo
+              Dự báo xu hướng, quy hoạch năng lực
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Integrations</CardTitle>
+            <CardTitle className="text-sm font-medium">Sức khỏe cộng đồng</CardTitle>
+            <Heart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold">Health</span>
+              {getStatusBadge(moduleStatus.iot.status)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Insights, phòng ngừa, khuyến nghị
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tích hợp</CardTitle>
             <Plug className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">5</span>
+              <span className="text-2xl font-bold">API</span>
               {getStatusBadge(moduleStatus.integrations.status)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Kết nối HIS/PACS/Lab
+              API management, webhooks, đồng bộ
             </p>
           </CardContent>
         </Card>
@@ -154,114 +161,49 @@ const AdvancedPage: React.FC = () => {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="ai" className="flex items-center gap-2">
             <Bot className="h-4 w-4" />
-            AI Assistant
+            AI Diagnosis
           </TabsTrigger>
-          <TabsTrigger value="telemedicine" className="flex items-center gap-2">
-            <Video className="h-4 w-4" />
-            Telemedicine
-          </TabsTrigger>
-          <TabsTrigger value="iot" className="flex items-center gap-2">
-            <Cpu className="h-4 w-4" />
-            IoT Devices
+          <TabsTrigger value="medications" className="flex items-center gap-2">
+            <Pill className="h-4 w-4" />
+            Thuốc
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Analytics
+            Phân tích
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="flex items-center gap-2">
+            <Heart className="h-4 w-4" />
+            Sức khỏe
           </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-2">
             <Plug className="h-4 w-4" />
-            Integrations
+            Tích hợp
           </TabsTrigger>
         </TabsList>
 
-        {/* AI Assistant Tab */}
+        {/* AI Diagnosis Tab */}
         <TabsContent value="ai" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                AI Assistant
-              </CardTitle>
-              <CardDescription>
-                Chat bot thông minh với khả năng gợi ý chẩn đoán, phân tích triệu chứng và tư vấn thuốc
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChatPanel />
-            </CardContent>
-          </Card>
+          <AIDiagnosis />
         </TabsContent>
 
-        {/* Telemedicine Tab */}
-        <TabsContent value="telemedicine" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Video className="h-5 w-5 text-green-500" />
-                Telemedicine
-              </CardTitle>
-              <CardDescription>
-                Khám từ xa với video call, chia sẻ màn hình và ePrescription
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <VideoCallPanel />
-            </CardContent>
-          </Card>
+        {/* Medication Interactions Tab */}
+        <TabsContent value="medications" className="space-y-4">
+          <MedicationInteractions />
         </TabsContent>
 
-        {/* IoT Devices Tab */}
-        <TabsContent value="iot" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-purple-500" />
-                IoT Devices
-              </CardTitle>
-              <CardDescription>
-                Quản lý thiết bị y tế kết nối, đồng bộ dữ liệu và cảnh báo bất thường
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DeviceList />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Tab */}
+        {/* Predictive Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-orange-500" />
-                Analytics & BI
-              </CardTitle>
-              <CardDescription>
-                Phân tích dự đoán, báo cáo tùy chỉnh và visualization grid
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <InsightCards />
-            </CardContent>
-          </Card>
+          <PredictiveAnalytics />
         </TabsContent>
 
-        {/* Integrations Tab */}
+        {/* Health Insights Tab */}
+        <TabsContent value="insights" className="space-y-4">
+          <HealthInsights />
+        </TabsContent>
+
+        {/* Integration Features Tab */}
         <TabsContent value="integrations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-cyan-500" />
-                Integration Hub
-              </CardTitle>
-              <CardDescription>
-                Kết nối HIS/PACS/Lab, quản lý API keys và webhook
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WebhookTable />
-            </CardContent>
-          </Card>
+          <IntegrationFeatures />
         </TabsContent>
       </Tabs>
 

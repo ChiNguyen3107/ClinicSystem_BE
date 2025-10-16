@@ -3,3 +3,8 @@ export { VideoCallPanel } from './VideoCallPanel';
 export { DeviceList } from './DeviceList';
 export { InsightCards } from './InsightCards';
 export { WebhookTable } from './WebhookTable';
+export { default as AIDiagnosis } from './AIDiagnosis';
+export { default as MedicationInteractions } from './MedicationInteractions';
+export { default as PredictiveAnalytics } from './PredictiveAnalytics';
+export { default as HealthInsights } from './HealthInsights';
+export { default as IntegrationFeatures } from './IntegrationFeatures';
