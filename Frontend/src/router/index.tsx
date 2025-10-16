@@ -23,6 +23,12 @@ const BillingEditor = React.lazy(() => import('@/pages/billing/BillingEditor').t
 const BillingDetail = React.lazy(() => import('@/pages/billing/BillingDetail').then(module => ({ default: module.BillingDetail })));
 const ReportsPage = React.lazy(() => import('@/pages/reports/ReportsPage').then(module => ({ default: module.ReportsPage })));
 
+// Public pages
+const PublicHome = React.lazy(() => import('@/pages/public/Home').then(module => ({ default: module.Home })));
+const PublicBooking = React.lazy(() => import('@/pages/public/Booking').then(module => ({ default: module.Booking })));
+const PublicDoctor = React.lazy(() => import('@/pages/public/DoctorPublic').then(module => ({ default: module.DoctorPublic })));
+const PublicBookingStatus = React.lazy(() => import('@/pages/public/BookingStatus').then(module => ({ default: module.BookingStatus })));
+
 // Loading component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center h-64">
@@ -61,6 +67,39 @@ export const router = createBrowserRouter([
           <Login />
         </Suspense>
       </PublicRoute>
+    ),
+  },
+  // Public routes (no authentication required)
+  {
+    path: '/public',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PublicHome />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/public/booking',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PublicBooking />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/public/doctors/:id',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PublicDoctor />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/public/booking/:id/status',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PublicBookingStatus />
+      </Suspense>
     ),
   },
   {

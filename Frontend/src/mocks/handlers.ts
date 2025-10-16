@@ -8,6 +8,7 @@ import type { Visit, VisitFilter } from '@/types/visit';
 import type { ServiceOrder } from '@/types/service';
 import { medicalServiceHandlers, indicatorHandlers } from './services';
 import { billingHandlers } from './billingHandlers';
+import { publicHandlers } from './publicHandlers';
 import type { Prescription, Medication, Billing, PrescriptionFilters, MedicationInteraction, MedicationBatch } from '@/types';
 
 // Mock data
@@ -2806,6 +2807,14 @@ const prescriptionHandlers = [
   })
 ];
 
+// Export all handlers including public handlers
+export const allHandlers = [
+  ...handlers,
+  ...medicalServiceHandlers,
+  ...indicatorHandlers,
+  ...billingHandlers,
+  ...publicHandlers
+];
 
 // Helper function to calculate end time
 function calculateEndTime(startTime: string, duration: number): string {
