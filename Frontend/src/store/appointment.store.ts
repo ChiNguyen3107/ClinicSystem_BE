@@ -37,6 +37,12 @@ interface AppointmentState {
   // Actions
   setFilters: (filters: Partial<AppointmentFilters>) => void;
   resetFilters: () => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  nextPage: () => void;
+  previousPage: () => void;
+  firstPage: () => void;
+  lastPage: () => void;
   
   // CRUD operations
   fetchAppointments: (filters?: AppointmentFilters) => Promise<void>;
@@ -99,10 +105,33 @@ export const useAppointmentStore = create<AppointmentState>()(
         set({ filters: initialFilters });
       },
 
+      setPage: (page) => set({ currentPage: page }),
+      
+      setPageSize: (size) => set({ pageSize: size, currentPage: 0 }),
+      
+      nextPage: () => set((state) => ({ 
+        currentPage: Math.min(state.currentPage + 1, state.totalPages - 1) 
+      })),
+      
+      previousPage: () => set((state) => ({ 
+        currentPage: Math.max(state.currentPage - 1, 0) 
+      })),
+      
+      firstPage: () => set({ currentPage: 0 }),
+      
+      lastPage: () => set((state) => ({ 
+        currentPage: Math.max(0, state.totalPages - 1) 
+      })),
+
       fetchAppointments: async (filters) => {
         set({ isLoading: true, error: null });
         try {
-          const currentFilters = filters || get().filters;
+          const state = get();
+          const currentFilters = filters || {
+            ...state.filters,
+            page: state.currentPage,
+            size: state.pageSize
+          };
           const response = await AppointmentService.getAppointments(currentFilters);
           
           set({

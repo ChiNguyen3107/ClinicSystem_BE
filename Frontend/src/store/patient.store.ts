@@ -31,6 +31,12 @@ interface PatientState {
   setPatients: (patients: Patient[]) => void;
   setSelectedPatient: (patient: Patient | null) => void;
   setPagination: (data: { totalElements: number; totalPages: number; currentPage: number; pageSize: number }) => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  nextPage: () => void;
+  previousPage: () => void;
+  firstPage: () => void;
+  lastPage: () => void;
   setKeyword: (keyword: string) => void;
   setSort: (field: string, direction: 'ASC' | 'DESC') => void;
   setLoading: (loading: boolean) => void;
@@ -85,6 +91,24 @@ export const usePatientStore = create<PatientState>()(
         pageSize: data.pageSize,
       }),
       
+      setPage: (page) => set({ currentPage: page }),
+      
+      setPageSize: (size) => set({ pageSize: size, currentPage: 0 }),
+      
+      nextPage: () => set((state) => ({ 
+        currentPage: Math.min(state.currentPage + 1, state.totalPages - 1) 
+      })),
+      
+      previousPage: () => set((state) => ({ 
+        currentPage: Math.max(state.currentPage - 1, 0) 
+      })),
+      
+      firstPage: () => set({ currentPage: 0 }),
+      
+      lastPage: () => set((state) => ({ 
+        currentPage: Math.max(0, state.totalPages - 1) 
+      })),
+      
       setKeyword: (keyword) => set({ keyword }),
       
       setSort: (field, direction) => set({ 
@@ -99,7 +123,17 @@ export const usePatientStore = create<PatientState>()(
       fetchPatients: async (params) => {
         set({ loading: true, error: null });
         try {
-          const response = await PatientService.getPatients(params);
+          const currentState = get();
+          const requestParams = {
+            page: currentState.currentPage,
+            size: currentState.pageSize,
+            keyword: currentState.keyword,
+            sortField: currentState.sortField,
+            sortDirection: currentState.sortDirection,
+            ...params
+          };
+          
+          const response = await PatientService.getPatients(requestParams);
           set({
             patients: response.content,
             totalElements: response.totalElements,

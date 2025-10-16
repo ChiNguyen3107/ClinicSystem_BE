@@ -33,6 +33,12 @@ interface DoctorState {
   
   // Actions
   setFilters: (filters: Partial<DoctorFilters>) => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  nextPage: () => void;
+  previousPage: () => void;
+  firstPage: () => void;
+  lastPage: () => void;
   fetchDoctors: () => Promise<void>;
   fetchDoctorById: (id: string) => Promise<void>;
   fetchDoctorStats: (id: string) => Promise<void>;
@@ -73,11 +79,34 @@ export const useDoctorStore = create<DoctorState>()(
         }));
       },
 
+      setPage: (page) => set({ currentPage: page }),
+      
+      setPageSize: (size) => set({ pageSize: size, currentPage: 0 }),
+      
+      nextPage: () => set((state) => ({ 
+        currentPage: Math.min(state.currentPage + 1, state.totalPages - 1) 
+      })),
+      
+      previousPage: () => set((state) => ({ 
+        currentPage: Math.max(state.currentPage - 1, 0) 
+      })),
+      
+      firstPage: () => set({ currentPage: 0 }),
+      
+      lastPage: () => set((state) => ({ 
+        currentPage: Math.max(0, state.totalPages - 1) 
+      })),
+
       fetchDoctors: async () => {
         set({ loading: true, error: null });
         try {
-          const { filters } = get();
-          const response = await doctorService.getDoctors(filters);
+          const { filters, currentPage, pageSize } = get();
+          const requestFilters = {
+            ...filters,
+            page: currentPage,
+            size: pageSize
+          };
+          const response = await doctorService.getDoctors(requestFilters);
           set({
             doctors: response.content,
             totalElements: response.totalElements,

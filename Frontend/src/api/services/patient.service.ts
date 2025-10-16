@@ -11,7 +11,15 @@ import type {
 export const patientService = {
   // Lấy danh sách bệnh nhân với phân trang và tìm kiếm
   async getPatients(params: PatientListParams = {}): Promise<PatientListResponse> {
-    const response = await axiosInstance.get('/patients', { params });
+    const defaultParams = {
+      page: 0,
+      size: 10,
+      sortField: 'createdAt',
+      sortDirection: 'DESC',
+      ...params
+    };
+    
+    const response = await axiosInstance.get('/patients', { params: defaultParams });
     return response.data;
   },
 

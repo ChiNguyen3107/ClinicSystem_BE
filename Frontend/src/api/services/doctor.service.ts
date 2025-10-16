@@ -11,13 +11,19 @@ import type {
 export const doctorService = {
   // Lấy danh sách bác sĩ với filter và pagination
   async getDoctors(filters: DoctorFilters = {}): Promise<DoctorListResponse> {
+    const defaultFilters = {
+      page: 0,
+      size: 10,
+      ...filters
+    };
+    
     const params = new URLSearchParams();
     
-    if (filters.specialty) params.append('specialty', filters.specialty);
-    if (filters.status) params.append('status', filters.status);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.size) params.append('size', filters.size.toString());
+    if (defaultFilters.specialty) params.append('specialty', defaultFilters.specialty);
+    if (defaultFilters.status) params.append('status', defaultFilters.status);
+    if (defaultFilters.search) params.append('search', defaultFilters.search);
+    params.append('page', defaultFilters.page.toString());
+    params.append('size', defaultFilters.size.toString());
 
     const response = await axios.get(`/doctors?${params.toString()}`);
     return response.data;
