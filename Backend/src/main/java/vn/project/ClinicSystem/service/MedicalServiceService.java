@@ -2,6 +2,8 @@ package vn.project.ClinicSystem.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +37,16 @@ public class MedicalServiceService {
         return medicalServiceRepository.findAll();
     }
 
+    public Page<MedicalService> findAll(Pageable pageable) {
+        return medicalServiceRepository.findAll(pageable);
+    }
+
     public List<MedicalService> findByClinicRoom(Long clinicRoomId) {
         return medicalServiceRepository.findByClinicRoomId(clinicRoomId);
+    }
+
+    public Page<MedicalService> findByClinicRoom(Long clinicRoomId, Pageable pageable) {
+        return medicalServiceRepository.findByClinicRoomId(clinicRoomId, pageable);
     }
 
     public MedicalService getById(Long id) {

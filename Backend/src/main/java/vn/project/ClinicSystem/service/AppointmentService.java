@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,16 +68,32 @@ public class AppointmentService {
         return appointmentRepository.findAll();
     }
 
+    public Page<Appointment> findAll(Pageable pageable) {
+        return appointmentRepository.findAll(pageable);
+    }
+
     public List<Appointment> findByDoctor(Long doctorId) {
         return appointmentRepository.findByDoctorIdOrderByScheduledAtAsc(doctorId);
+    }
+
+    public Page<Appointment> findByDoctor(Long doctorId, Pageable pageable) {
+        return appointmentRepository.findByDoctorIdOrderByScheduledAtAsc(doctorId, pageable);
     }
 
     public List<Appointment> findByPatient(Long patientId) {
         return appointmentRepository.findByPatientIdOrderByScheduledAtDesc(patientId);
     }
 
+    public Page<Appointment> findByPatient(Long patientId, Pageable pageable) {
+        return appointmentRepository.findByPatientIdOrderByScheduledAtDesc(patientId, pageable);
+    }
+
     public List<Appointment> findByStatus(AppointmentStatus status) {
         return appointmentRepository.findByStatus(status);
+    }
+
+    public Page<Appointment> findByStatus(AppointmentStatus status, Pageable pageable) {
+        return appointmentRepository.findByStatus(status, pageable);
     }
 
     @Transactional

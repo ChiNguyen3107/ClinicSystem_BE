@@ -2,6 +2,9 @@ package vn.project.ClinicSystem.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,21 +50,27 @@ public class AppointmentController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")
     @GetMapping
-    public ResponseEntity<List<Appointment>> getAppointments(
+    public ResponseEntity<Page<Appointment>> getAppointments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "doctorId", required = false) Long doctorId,
             @RequestParam(value = "patientId", required = false) Long patientId,
             @RequestParam(value = "status", required = false) AppointmentStatus status) {
 
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Appointment> appointments;
+
         if (doctorId != null) {
-            return ResponseEntity.ok(appointmentService.findByDoctor(doctorId));
+            appointments = appointmentService.findByDoctor(doctorId, pageable);
+        } else if (patientId != null) {
+            appointments = appointmentService.findByPatient(patientId, pageable);
+        } else if (status != null) {
+            appointments = appointmentService.findByStatus(status, pageable);
+        } else {
+            appointments = appointmentService.findAll(pageable);
         }
-        if (patientId != null) {
-            return ResponseEntity.ok(appointmentService.findByPatient(patientId));
-        }
-        if (status != null) {
-            return ResponseEntity.ok(appointmentService.findByStatus(status));
-        }
-        return ResponseEntity.ok(appointmentService.findAll());
+        
+        return ResponseEntity.ok(appointments);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")

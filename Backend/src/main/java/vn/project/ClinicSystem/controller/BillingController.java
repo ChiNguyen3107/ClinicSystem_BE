@@ -2,6 +2,9 @@ package vn.project.ClinicSystem.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,16 +44,23 @@ public class BillingController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")
     @GetMapping
-    public ResponseEntity<List<Billing>> getBillings(
+    public ResponseEntity<Page<Billing>> getBillings(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "patientId", required = false) Long patientId,
             @RequestParam(value = "visitId", required = false) Long visitId) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Billing> billings;
+        
         if (visitId != null) {
-            return ResponseEntity.ok(List.of(billingService.getByVisit(visitId)));
+            billings = billingService.getByVisit(visitId, pageable);
+        } else if (patientId != null) {
+            billings = billingService.findByPatient(patientId, pageable);
+        } else {
+            billings = billingService.findAll(pageable);
         }
-        if (patientId != null) {
-            return ResponseEntity.ok(billingService.findByPatient(patientId));
-        }
-        return ResponseEntity.ok(billingService.findAll());
+        
+        return ResponseEntity.ok(billings);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")

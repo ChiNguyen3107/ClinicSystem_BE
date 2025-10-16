@@ -2,6 +2,8 @@ package vn.project.ClinicSystem.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,13 @@ public class ClinicRoomService {
             throw new EntityNotFoundException("Không tìm thấy phòng ở tầng/khu: " + floor);
         }
         return rooms;
+    }
+
+    public Page<ClinicRoom> searchByFloor(String floor, Pageable pageable) {
+        if (floor == null || floor.isBlank()) {
+            return clinicRoomRepository.findAll(pageable);
+        }
+        return clinicRoomRepository.findByFloorIgnoreCase(floor.trim(), pageable);
     }
 
     public ClinicRoom getById(Long id) {

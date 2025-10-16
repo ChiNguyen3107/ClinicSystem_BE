@@ -2,6 +2,9 @@ package vn.project.ClinicSystem.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,8 +40,13 @@ public class DoctorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Doctor>> getDoctors(@RequestParam(value = "specialty", required = false) String specialty) {
-        return ResponseEntity.ok(doctorService.searchBySpecialty(specialty));
+    public ResponseEntity<Page<Doctor>> getDoctors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(value = "specialty", required = false) String specialty) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Doctor> doctors = doctorService.searchBySpecialty(specialty, pageable);
+        return ResponseEntity.ok(doctors);
     }
 
     @GetMapping("/{id}")

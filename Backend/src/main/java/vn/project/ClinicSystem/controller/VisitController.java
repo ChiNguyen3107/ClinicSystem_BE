@@ -2,6 +2,9 @@ package vn.project.ClinicSystem.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,12 +51,20 @@ public class VisitController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")
     @GetMapping
-    public ResponseEntity<List<PatientVisit>> getVisitsByPatient(
+    public ResponseEntity<Page<PatientVisit>> getVisitsByPatient(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "patientId", required = false) Long patientId) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PatientVisit> visits;
+        
         if (patientId != null) {
-            return ResponseEntity.ok(visitService.findByPatient(patientId));
+            visits = visitService.findByPatient(patientId, pageable);
+        } else {
+            visits = visitService.findAll(pageable);
         }
-        return ResponseEntity.ok(visitService.findAll());
+        
+        return ResponseEntity.ok(visits);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")

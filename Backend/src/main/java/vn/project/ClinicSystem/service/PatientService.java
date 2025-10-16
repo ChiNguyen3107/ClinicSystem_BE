@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,14 @@ public class PatientService {
             throw new EntityNotFoundException("Không tìm thấy bệnh nhân với từ khóa: " + normalized);
         }
         return patients;
+    }
+
+    public Page<Patient> searchByKeyword(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            return patientRepository.findAll(pageable);
+        }
+        String normalized = keyword.trim();
+        return patientRepository.findByFullNameContainingIgnoreCase(normalized, pageable);
     }
 
     public Patient getById(Long id) {

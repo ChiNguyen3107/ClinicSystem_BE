@@ -3,6 +3,9 @@ package vn.project.ClinicSystem.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,9 +41,13 @@ public class PatientController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Patient>> getPatients(
+    public ResponseEntity<Page<Patient>> getPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "keyword", required = false) String keyword) {
-        return ResponseEntity.ok(patientService.searchByKeyword(keyword));
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Patient> patients = patientService.searchByKeyword(keyword, pageable);
+        return ResponseEntity.ok(patients);
     }
 
     @GetMapping("/{id}")

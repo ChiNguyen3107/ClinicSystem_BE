@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,8 +66,20 @@ public class BillingService {
         return billingRepository.findByPatientIdOrderByIssuedAtDesc(patientId);
     }
 
+    public Page<Billing> findByPatient(Long patientId, Pageable pageable) {
+        return billingRepository.findByPatientIdOrderByIssuedAtDesc(patientId, pageable);
+    }
+
     public List<Billing> findAll() {
         return billingRepository.findAll(Sort.by(Sort.Direction.DESC, "issuedAt"));
+    }
+
+    public Page<Billing> findAll(Pageable pageable) {
+        return billingRepository.findAll(pageable);
+    }
+
+    public Page<Billing> getByVisit(Long visitId, Pageable pageable) {
+        return billingRepository.findByVisitId(visitId, pageable);
     }
 
     @Transactional

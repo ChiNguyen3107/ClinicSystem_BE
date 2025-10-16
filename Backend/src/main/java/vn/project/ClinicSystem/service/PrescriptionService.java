@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -78,10 +80,23 @@ public class PrescriptionService {
         return prescriptions;
     }
 
+    public Page<Prescription> findAll(Pageable pageable) {
+        Page<Prescription> prescriptions = prescriptionRepository.findAll(pageable);
+        prescriptions.getContent().forEach(this::hydratePrescription);
+        return prescriptions;
+    }
+
     public List<Prescription> findByVisit(Long visitId) {
         ensureVisitExists(visitId);
         List<Prescription> prescriptions = prescriptionRepository.findByVisitIdOrderByIssuedAtDesc(visitId);
         prescriptions.forEach(this::hydratePrescription);
+        return prescriptions;
+    }
+
+    public Page<Prescription> findByVisit(Long visitId, Pageable pageable) {
+        ensureVisitExists(visitId);
+        Page<Prescription> prescriptions = prescriptionRepository.findByVisitIdOrderByIssuedAtDesc(visitId, pageable);
+        prescriptions.getContent().forEach(this::hydratePrescription);
         return prescriptions;
     }
 

@@ -2,6 +2,8 @@ package vn.project.ClinicSystem.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,10 +15,16 @@ import vn.project.ClinicSystem.model.enums.AppointmentStatus;
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
         List<Appointment> findByDoctorIdOrderByScheduledAtAsc(Long doctorId);
+        
+        Page<Appointment> findByDoctorIdOrderByScheduledAtAsc(Long doctorId, Pageable pageable);
 
         List<Appointment> findByPatientIdOrderByScheduledAtDesc(Long patientId);
+        
+        Page<Appointment> findByPatientIdOrderByScheduledAtDesc(Long patientId, Pageable pageable);
 
         List<Appointment> findByStatus(AppointmentStatus status);
+        
+        Page<Appointment> findByStatus(AppointmentStatus status, Pageable pageable);
 
         @Query(value = """
                         SELECT EXISTS (
