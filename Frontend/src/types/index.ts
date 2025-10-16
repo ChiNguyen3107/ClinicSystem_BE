@@ -646,11 +646,14 @@ export interface DoctorFilters {
 export interface DashboardStats {
   totalPatients: number;
   totalPatientsChange: number;
+  newPatients: number;
+  newPatientsChange: number;
   todayAppointments: number;
   pendingAppointments: number;
   activeDoctors: number;
   doctorsWithSchedule: number;
   monthlyRevenue: number;
+  todayRevenue: number;
   revenueGrowth: number;
   successRate: number;
   activeRooms: number;
@@ -663,6 +666,67 @@ export interface DashboardStatsResponse {
 }
 
 export type DashboardPeriod = 'today' | 'week' | 'month' | 'year';
+
+// Chart data types
+export interface ChartData {
+  name: string;
+  value: number;
+  change?: number;
+  color?: string;
+}
+
+export interface ChartConfig {
+  type: 'line' | 'bar' | 'pie' | 'area';
+  title: string;
+  description?: string;
+  data: ChartData[];
+  period: DashboardPeriod;
+}
+
+// Activity types
+export interface Activity {
+  id: string;
+  type: 'appointment' | 'patient' | 'notification' | 'task' | 'system';
+  title: string;
+  description: string;
+  timestamp: Date;
+  status?: 'pending' | 'completed' | 'cancelled' | 'in_progress';
+  priority?: 'low' | 'medium' | 'high';
+  user?: string;
+  unread?: boolean;
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+// Real-time data types
+export interface RealTimeData {
+  stats: DashboardStats | null;
+  notifications: Notification[];
+  activities: Activity[];
+  lastUpdate: Date | null;
+}
+
+// WebSocket message types
+export interface WebSocketMessage {
+  type: string;
+  data: any;
+  timestamp: number;
+}
+
+export interface WebSocketConfig {
+  url: string;
+  reconnectInterval?: number;
+  maxReconnectAttempts?: number;
+}
 
 // Export report types
 export * from './report';
