@@ -1332,8 +1332,8 @@ export const handlers = [
 
     // Sort
     filteredPatients.sort((a, b) => {
-      let aValue = a[sort as keyof Patient];
-      let bValue = b[sort as keyof Patient];
+      let aValue = a[sort as keyof Patient] ?? '';
+      let bValue = b[sort as keyof Patient] ?? '';
       
       if (typeof aValue === 'string') {
         aValue = aValue.toLowerCase();
@@ -1365,6 +1365,226 @@ export const handlers = [
     };
 
     return HttpResponse.json(response);
+  }),
+
+  // Dashboard handlers
+  // GET /dashboard/stats - Get dashboard statistics
+  http.get('/api/dashboard/stats', ({ request }) => {
+    const url = new URL(request.url);
+    const period = url.searchParams.get('period') || 'month';
+    
+    const mockStats = {
+      totalPatients: 1247,
+      totalPatientsChange: 12.5,
+      todayAppointments: 23,
+      pendingAppointments: 5,
+      activeDoctors: 8,
+      doctorsWithSchedule: 6,
+      monthlyRevenue: 45000000,
+      revenueGrowth: 8.2,
+      successRate: 94.5,
+      activeRooms: 4
+    };
+
+    return HttpResponse.json({
+      success: true,
+      data: mockStats,
+      message: 'Thống kê dashboard được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/appointments-today - Get today's appointments
+  http.get('/api/dashboard/appointments-today', () => {
+    const todayAppointments = [
+      {
+        id: 1,
+        patient: 'Nguyễn Văn A',
+        doctor: 'BS. Trần Thị B',
+        time: '09:00',
+        status: 'CONFIRMED',
+        priority: 'normal'
+      },
+      {
+        id: 2,
+        patient: 'Lê Thị C',
+        doctor: 'BS. Phạm Văn D',
+        time: '10:30',
+        status: 'IN_PROGRESS',
+        priority: 'high'
+      },
+      {
+        id: 3,
+        patient: 'Hoàng Văn E',
+        doctor: 'BS. Nguyễn Thị F',
+        time: '14:00',
+        status: 'PENDING',
+        priority: 'medium'
+      }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: todayAppointments,
+      message: 'Lịch hẹn hôm nay được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/upcoming-appointments - Get upcoming appointments
+  http.get('/api/dashboard/upcoming-appointments', () => {
+    const upcomingAppointments = [
+      {
+        id: 4,
+        patient: 'Trần Thị G',
+        doctor: 'BS. Lê Văn H',
+        time: '08:30',
+        date: '2024-01-16',
+        status: 'CONFIRMED',
+        priority: 'normal'
+      },
+      {
+        id: 5,
+        patient: 'Phạm Văn I',
+        doctor: 'BS. Nguyễn Thị J',
+        time: '11:00',
+        date: '2024-01-16',
+        status: 'PENDING',
+        priority: 'high'
+      },
+      {
+        id: 6,
+        patient: 'Võ Thị K',
+        doctor: 'BS. Trần Văn L',
+        time: '15:30',
+        date: '2024-01-17',
+        status: 'CONFIRMED',
+        priority: 'low'
+      }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: upcomingAppointments,
+      message: 'Lịch hẹn sắp tới được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/pending-tasks - Get pending tasks
+  http.get('/api/dashboard/pending-tasks', () => {
+    const pendingTasks = [
+      {
+        id: 1,
+        title: 'Bệnh nhân chờ kết quả xét nghiệm',
+        subtitle: 'Nguyễn Văn A - Xét nghiệm máu',
+        status: 'PENDING',
+        priority: 'high',
+        time: '2 giờ trước'
+      },
+      {
+        id: 2,
+        title: 'Cần tái khám',
+        subtitle: 'Lê Thị C - Tái khám sau 1 tuần',
+        status: 'PENDING',
+        priority: 'medium',
+        time: '1 ngày trước'
+      },
+      {
+        id: 3,
+        title: 'Chưa thanh toán',
+        subtitle: 'Hoàng Văn E - Hóa đơn 2,500,000 VNĐ',
+        status: 'PENDING',
+        priority: 'high',
+        time: '3 ngày trước'
+      }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: pendingTasks,
+      message: 'Công việc chờ xử lý được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/revenue-chart - Get revenue chart data
+  http.get('/api/dashboard/revenue-chart', ({ request }) => {
+    const url = new URL(request.url);
+    const period = url.searchParams.get('period') || 'month';
+    
+    const revenueData = [
+      { name: 'T1', revenue: 35000000, patients: 45 },
+      { name: 'T2', revenue: 42000000, patients: 52 },
+      { name: 'T3', revenue: 38000000, patients: 48 },
+      { name: 'T4', revenue: 45000000, patients: 58 },
+      { name: 'T5', revenue: 52000000, patients: 65 },
+      { name: 'T6', revenue: 48000000, patients: 62 },
+      { name: 'T7', revenue: 55000000, patients: 70 },
+      { name: 'T8', revenue: 60000000, patients: 75 },
+      { name: 'T9', revenue: 58000000, patients: 72 },
+      { name: 'T10', revenue: 62000000, patients: 78 },
+      { name: 'T11', revenue: 65000000, patients: 82 },
+      { name: 'T12', revenue: 70000000, patients: 88 }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: revenueData,
+      message: 'Dữ liệu biểu đồ doanh thu được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/patient-chart - Get patient chart data
+  http.get('/api/dashboard/patient-chart', ({ request }) => {
+    const url = new URL(request.url);
+    const period = url.searchParams.get('period') || 'month';
+    
+    const patientData = [
+      { name: 'Thứ 2', patients: 12, appointments: 15 },
+      { name: 'Thứ 3', patients: 18, appointments: 22 },
+      { name: 'Thứ 4', patients: 15, appointments: 18 },
+      { name: 'Thứ 5', patients: 20, appointments: 25 },
+      { name: 'Thứ 6', patients: 16, appointments: 19 },
+      { name: 'Thứ 7', patients: 8, appointments: 10 },
+      { name: 'CN', patients: 3, appointments: 4 }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: patientData,
+      message: 'Dữ liệu biểu đồ bệnh nhân được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/doctor-stats - Get doctor statistics
+  http.get('/api/dashboard/doctor-stats', () => {
+    const doctorStats = [
+      { name: 'BS. Trần Thị B', appointments: 45, patients: 38, revenue: 8500000 },
+      { name: 'BS. Phạm Văn D', appointments: 52, patients: 42, revenue: 9200000 },
+      { name: 'BS. Nguyễn Thị F', appointments: 38, patients: 35, revenue: 7800000 },
+      { name: 'BS. Lê Văn H', appointments: 41, patients: 36, revenue: 8100000 },
+      { name: 'BS. Trần Văn L', appointments: 35, patients: 32, revenue: 7200000 }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: doctorStats,
+      message: 'Thống kê bác sĩ được tải thành công'
+    });
+  }),
+
+  // GET /dashboard/service-stats - Get service statistics
+  http.get('/api/dashboard/service-stats', () => {
+    const serviceStats = [
+      { name: 'Khám tổng quát', value: 45, color: '#3b82f6' },
+      { name: 'Xét nghiệm', value: 30, color: '#10b981' },
+      { name: 'Chẩn đoán hình ảnh', value: 15, color: '#f59e0b' },
+      { name: 'Phẫu thuật', value: 8, color: '#ef4444' },
+      { name: 'Khác', value: 2, color: '#8b5cf6' }
+    ];
+
+    return HttpResponse.json({
+      success: true,
+      data: serviceStats,
+      message: 'Thống kê dịch vụ được tải thành công'
+    });
   }),
 
   // GET /patients/:id - Get patient by ID
