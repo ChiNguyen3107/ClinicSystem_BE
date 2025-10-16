@@ -42,6 +42,7 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final DoctorScheduleRepository doctorScheduleRepository;
     private final Validator validator;
+    private final RealTimeEventService realTimeEventService;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
             PatientRepository patientRepository,
@@ -49,7 +50,8 @@ public class AppointmentService {
             ClinicRoomRepository clinicRoomRepository,
             UserRepository userRepository,
             DoctorScheduleRepository doctorScheduleRepository,
-            Validator validator) {
+            Validator validator,
+            RealTimeEventService realTimeEventService) {
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
@@ -57,6 +59,7 @@ public class AppointmentService {
         this.userRepository = userRepository;
         this.doctorScheduleRepository = doctorScheduleRepository;
         this.validator = validator;
+        this.realTimeEventService = realTimeEventService;
     }
 
     public Appointment getById(Long id) {
@@ -118,7 +121,16 @@ public class AppointmentService {
 
         validateBean(appointment);
         ensureAvailability(appointment, null);
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyAppointmentCreated(
+            savedAppointment.getId(), 
+            savedAppointment.getDoctor().getId(), 
+            savedAppointment.getPatient().getId()
+        );
+        
+        return savedAppointment;
     }
 
     @Transactional
@@ -158,7 +170,16 @@ public class AppointmentService {
 
         validateBean(appointment);
         ensureAvailability(appointment, null);
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyAppointmentCreated(
+            savedAppointment.getId(), 
+            savedAppointment.getDoctor().getId(), 
+            savedAppointment.getPatient().getId()
+        );
+        
+        return savedAppointment;
     }
 
     @Transactional
@@ -198,7 +219,16 @@ public class AppointmentService {
 
         validateBean(appointment);
         ensureAvailability(appointment, appointment.getId());
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyAppointmentUpdated(
+            savedAppointment.getId(), 
+            savedAppointment.getDoctor().getId(), 
+            savedAppointment.getPatient().getId()
+        );
+        
+        return savedAppointment;
     }
 
     @Transactional
@@ -213,10 +243,14 @@ public class AppointmentService {
 
     @Transactional
     public void delete(Long id) {
-        if (!appointmentRepository.existsById(id)) {
-            throw new EntityNotFoundException("Không tìm thấy lịch khám với id: " + id);
-        }
+        Appointment appointment = getById(id);
+        Long doctorId = appointment.getDoctor().getId();
+        Long patientId = appointment.getPatient().getId();
+        
         appointmentRepository.deleteById(id);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyAppointmentCancelled(id, doctorId, patientId);
     }
 
     private void ensureAvailability(Appointment appointment, Long ignoreId) {

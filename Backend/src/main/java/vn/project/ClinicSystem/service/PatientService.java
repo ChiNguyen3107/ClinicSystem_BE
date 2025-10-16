@@ -21,10 +21,12 @@ import vn.project.ClinicSystem.repository.PatientRepository;
 public class PatientService {
     private final PatientRepository patientRepository;
     private final Validator validator;
+    private final RealTimeEventService realTimeEventService;
 
-    public PatientService(PatientRepository patientRepository, Validator validator) {
+    public PatientService(PatientRepository patientRepository, Validator validator, RealTimeEventService realTimeEventService) {
         this.patientRepository = patientRepository;
         this.validator = validator;
+        this.realTimeEventService = realTimeEventService;
     }
 
     public List<Patient> findAll() {
@@ -205,6 +207,15 @@ public class PatientService {
                 hasKeyword ? normalizedKeyword : null,
                 dateOfBirth,
                 hasPhone ? normalizedPhone : null);
+    }
+    
+    @Transactional
+    public void checkInPatient(Long patientId, Long doctorId) {
+        // Kiểm tra patient tồn tại
+        getById(patientId);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyPatientCheckedIn(patientId, doctorId);
     }
 
 }

@@ -39,17 +39,20 @@ public class BillingService {
     private final PatientVisitRepository patientVisitRepository;
     private final ServiceOrderRepository serviceOrderRepository;
     private final PrescriptionRepository prescriptionRepository;
+    private final RealTimeEventService realTimeEventService;
 
     public BillingService(BillingRepository billingRepository,
             BillingItemRepository billingItemRepository,
             PatientVisitRepository patientVisitRepository,
             ServiceOrderRepository serviceOrderRepository,
-            PrescriptionRepository prescriptionRepository) {
+            PrescriptionRepository prescriptionRepository,
+            RealTimeEventService realTimeEventService) {
         this.billingRepository = billingRepository;
         this.billingItemRepository = billingItemRepository;
         this.patientVisitRepository = patientVisitRepository;
         this.serviceOrderRepository = serviceOrderRepository;
         this.prescriptionRepository = prescriptionRepository;
+        this.realTimeEventService = realTimeEventService;
     }
 
     public Billing getById(Long billingId) {
@@ -116,7 +119,16 @@ public class BillingService {
         if (request.getNotes() != null) {
             billing.setNotes(normalizeText(request.getNotes()));
         }
-        return billingRepository.save(billing);
+        Billing savedBilling = billingRepository.save(billing);
+        
+        // Gửi real-time notification
+        realTimeEventService.notifyBillingStatusChanged(
+            savedBilling.getId(), 
+            savedBilling.getStatus().name(), 
+            savedBilling.getPatient().getId()
+        );
+        
+        return savedBilling;
     }
 
     @Transactional
