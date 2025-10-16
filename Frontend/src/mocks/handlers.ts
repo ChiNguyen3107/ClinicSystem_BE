@@ -1,5 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type { Patient, PatientListResponse, PatientDetail } from '@/types/patient';
+import type { Doctor, DoctorListResponse, DoctorStats, CreateDoctorRequest } from '@/types/doctor';
+import type { Schedule, WeeklySchedule } from '@/types/schedule';
 
 // Mock data
 const mockPatients: Patient[] = [
@@ -425,6 +427,154 @@ const mockPatients: Patient[] = [
   },
 ];
 
+// Mock doctors data
+const mockDoctors: Doctor[] = [
+  {
+    id: '1',
+    userId: 'user-1',
+    fullName: 'BS. Nguyễn Văn Bác',
+    email: 'bac.nguyen@clinic.com',
+    phone: '0123456789',
+    gender: 'MALE',
+    dateOfBirth: '1980-05-15',
+    specialty: 'Tim mạch',
+    licenseNo: 'BS001',
+    room: 'Phòng 101',
+    bio: 'Bác sĩ chuyên khoa tim mạch với 15 năm kinh nghiệm',
+    status: 'ACTIVE',
+    avatar: '',
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z',
+  },
+  {
+    id: '2',
+    userId: 'user-2',
+    fullName: 'BS. Trần Thị Sĩ',
+    email: 'si.tran@clinic.com',
+    phone: '0987654321',
+    gender: 'FEMALE',
+    dateOfBirth: '1985-12-03',
+    specialty: 'Nhi khoa',
+    licenseNo: 'BS002',
+    room: 'Phòng 102',
+    bio: 'Bác sĩ nhi khoa chuyên điều trị các bệnh lý ở trẻ em',
+    status: 'ACTIVE',
+    avatar: '',
+    createdAt: '2024-01-16T09:15:00Z',
+    updatedAt: '2024-01-16T09:15:00Z',
+  },
+  {
+    id: '3',
+    userId: 'user-3',
+    fullName: 'BS. Lê Văn Cường',
+    email: 'cuong.le@clinic.com',
+    phone: '0369258147',
+    gender: 'MALE',
+    dateOfBirth: '1975-08-20',
+    specialty: 'Ngoại khoa',
+    licenseNo: 'BS003',
+    room: 'Phòng 103',
+    bio: 'Bác sĩ ngoại khoa với chuyên môn cao trong phẫu thuật',
+    status: 'ACTIVE',
+    avatar: '',
+    createdAt: '2024-01-17T10:00:00Z',
+    updatedAt: '2024-01-17T10:00:00Z',
+  },
+  {
+    id: '4',
+    userId: 'user-4',
+    fullName: 'BS. Phạm Thị Dung',
+    email: 'dung.pham@clinic.com',
+    phone: '0741852963',
+    gender: 'FEMALE',
+    dateOfBirth: '1982-03-10',
+    specialty: 'Sản phụ khoa',
+    licenseNo: 'BS004',
+    room: 'Phòng 104',
+    bio: 'Bác sĩ sản phụ khoa chuyên chăm sóc sức khỏe phụ nữ',
+    status: 'ACTIVE',
+    avatar: '',
+    createdAt: '2024-01-18T11:30:00Z',
+    updatedAt: '2024-01-18T11:30:00Z',
+  },
+  {
+    id: '5',
+    userId: 'user-5',
+    fullName: 'BS. Hoàng Văn Em',
+    email: 'em.hoang@clinic.com',
+    phone: '0852741963',
+    gender: 'MALE',
+    dateOfBirth: '1978-11-25',
+    specialty: 'Thần kinh',
+    licenseNo: 'BS005',
+    room: 'Phòng 105',
+    bio: 'Bác sĩ thần kinh chuyên điều trị các bệnh lý não bộ',
+    status: 'INACTIVE',
+    avatar: '',
+    createdAt: '2024-01-19T14:20:00Z',
+    updatedAt: '2024-01-19T14:20:00Z',
+  },
+];
+
+// Mock schedules data
+const mockSchedules: Schedule[] = [
+  {
+    id: '1',
+    doctorId: '1',
+    dayOfWeek: 1, // Monday
+    startTime: '08:00',
+    endTime: '12:00',
+    room: 'Phòng 101',
+    isActive: true,
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z',
+  },
+  {
+    id: '2',
+    doctorId: '1',
+    dayOfWeek: 1, // Monday
+    startTime: '14:00',
+    endTime: '18:00',
+    room: 'Phòng 101',
+    isActive: true,
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z',
+  },
+  {
+    id: '3',
+    doctorId: '1',
+    dayOfWeek: 3, // Wednesday
+    startTime: '08:00',
+    endTime: '12:00',
+    room: 'Phòng 101',
+    isActive: true,
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z',
+  },
+  {
+    id: '4',
+    doctorId: '2',
+    dayOfWeek: 2, // Tuesday
+    startTime: '08:00',
+    endTime: '17:00',
+    room: 'Phòng 102',
+    isActive: true,
+    createdAt: '2024-01-16T09:15:00Z',
+    updatedAt: '2024-01-16T09:15:00Z',
+  },
+  {
+    id: '5',
+    doctorId: '2',
+    dayOfWeek: 4, // Thursday
+    startTime: '08:00',
+    endTime: '17:00',
+    room: 'Phòng 102',
+    isActive: true,
+    createdAt: '2024-01-16T09:15:00Z',
+    updatedAt: '2024-01-16T09:15:00Z',
+  },
+];
+
 // Generate patient code
 const generatePatientCode = (): string => {
   const timestamp = Date.now().toString().slice(-8);
@@ -660,5 +810,297 @@ export const handlers = [
     }
 
     return HttpResponse.json({ canDelete: true });
+  }),
+
+  // Doctor API handlers
+  // GET /doctors - List doctors with filters
+  http.get('/api/doctors', ({ request }) => {
+    const url = new URL(request.url);
+    const specialty = url.searchParams.get('specialty');
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+
+    // Filter doctors
+    let filteredDoctors = mockDoctors;
+    
+    if (specialty) {
+      filteredDoctors = filteredDoctors.filter(doctor => 
+        doctor.specialty.toLowerCase().includes(specialty.toLowerCase())
+      );
+    }
+    
+    if (status) {
+      filteredDoctors = filteredDoctors.filter(doctor => doctor.status === status);
+    }
+    
+    if (search) {
+      filteredDoctors = filteredDoctors.filter(doctor =>
+        doctor.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        doctor.specialty.toLowerCase().includes(search.toLowerCase()) ||
+        doctor.licenseNo.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const content = filteredDoctors.slice(startIndex, endIndex);
+    const totalElements = filteredDoctors.length;
+    const totalPages = Math.ceil(totalElements / size);
+
+    const response: DoctorListResponse = {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number: page,
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  // GET /doctors/:id - Get doctor by ID
+  http.get('/api/doctors/:id', ({ params }) => {
+    const id = params.id as string;
+    const doctor = mockDoctors.find(d => d.id === id);
+    
+    if (!doctor) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy bác sĩ' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json(doctor);
+  }),
+
+  // POST /doctors - Create new doctor
+  http.post('/api/doctors', async ({ request }) => {
+    const data = await request.json() as CreateDoctorRequest;
+    
+    const newDoctor: Doctor = {
+      id: (Math.max(...mockDoctors.map(d => parseInt(d.id))) + 1).toString(),
+      userId: `user-${Date.now()}`,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      gender: data.gender,
+      dateOfBirth: data.dateOfBirth,
+      specialty: data.specialty,
+      licenseNo: data.licenseNo,
+      room: data.room,
+      bio: data.bio,
+      status: 'ACTIVE',
+      avatar: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockDoctors.push(newDoctor);
+    return HttpResponse.json(newDoctor, { status: 201 });
+  }),
+
+  // PUT /doctors/:id - Update doctor
+  http.put('/api/doctors/:id', async ({ params, request }) => {
+    const id = params.id as string;
+    const data = await request.json() as any;
+    
+    const doctorIndex = mockDoctors.findIndex(d => d.id === id);
+    if (doctorIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy bác sĩ' },
+        { status: 404 }
+      );
+    }
+
+    const updatedDoctor: Doctor = {
+      ...mockDoctors[doctorIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockDoctors[doctorIndex] = updatedDoctor;
+    return HttpResponse.json(updatedDoctor);
+  }),
+
+  // DELETE /doctors/:id - Delete doctor
+  http.delete('/api/doctors/:id', ({ params }) => {
+    const id = params.id as string;
+    const doctorIndex = mockDoctors.findIndex(d => d.id === id);
+    
+    if (doctorIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy bác sĩ' },
+        { status: 404 }
+      );
+    }
+
+    mockDoctors.splice(doctorIndex, 1);
+    return HttpResponse.json({ message: 'Xóa bác sĩ thành công' });
+  }),
+
+  // POST /doctors/:id/reset-password - Reset doctor password
+  http.post('/api/doctors/:id/reset-password', ({ params }) => {
+    const id = params.id as string;
+    const doctor = mockDoctors.find(d => d.id === id);
+    
+    if (!doctor) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy bác sĩ' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({ message: 'Reset mật khẩu thành công' });
+  }),
+
+  // GET /doctors/:id/stats - Get doctor stats
+  http.get('/api/doctors/:id/stats', ({ params }) => {
+    const id = params.id as string;
+    const doctor = mockDoctors.find(d => d.id === id);
+    
+    if (!doctor) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy bác sĩ' },
+        { status: 404 }
+      );
+    }
+
+    const stats: DoctorStats = {
+      totalAppointments: Math.floor(Math.random() * 100) + 50,
+      completedAppointments: Math.floor(Math.random() * 80) + 40,
+      upcomingAppointments: Math.floor(Math.random() * 20) + 5,
+      averageRating: 4.5 + Math.random() * 0.5,
+      totalPatients: Math.floor(Math.random() * 200) + 100,
+    };
+
+    return HttpResponse.json(stats);
+  }),
+
+  // GET /doctors/specialties - Get specialties
+  http.get('/api/doctors/specialties', () => {
+    const specialties = [
+      'Tim mạch',
+      'Nhi khoa',
+      'Ngoại khoa',
+      'Sản phụ khoa',
+      'Thần kinh',
+      'Da liễu',
+      'Mắt',
+      'Tai mũi họng',
+      'Nội tiết',
+      'Tiêu hóa',
+      'Hô hấp',
+      'Ung bướu',
+      'Xương khớp',
+      'Tâm thần',
+      'Y học cổ truyền'
+    ];
+    return HttpResponse.json(specialties);
+  }),
+
+  // Doctor Schedule API handlers
+  // GET /doctor-schedules - Get doctor schedules
+  http.get('/api/doctor-schedules', ({ request }) => {
+    const url = new URL(request.url);
+    const doctorId = url.searchParams.get('doctorId');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+    const dayOfWeek = url.searchParams.get('dayOfWeek');
+
+    let filteredSchedules = mockSchedules;
+    
+    if (doctorId) {
+      filteredSchedules = filteredSchedules.filter(s => s.doctorId === doctorId);
+    }
+    
+    if (dayOfWeek !== null) {
+      filteredSchedules = filteredSchedules.filter(s => s.dayOfWeek === parseInt(dayOfWeek!));
+    }
+
+    return HttpResponse.json(filteredSchedules);
+  }),
+
+  // POST /doctor-schedules - Create schedule
+  http.post('/api/doctor-schedules', async ({ request }) => {
+    const data = await request.json() as any;
+    
+    const newSchedule: Schedule = {
+      id: (Math.max(...mockSchedules.map(s => parseInt(s.id))) + 1).toString(),
+      doctorId: data.doctorId,
+      dayOfWeek: data.dayOfWeek,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      room: data.room,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockSchedules.push(newSchedule);
+    return HttpResponse.json(newSchedule, { status: 201 });
+  }),
+
+  // PUT /doctor-schedules/:id - Update schedule
+  http.put('/api/doctor-schedules/:id', async ({ params, request }) => {
+    const id = params.id as string;
+    const data = await request.json() as any;
+    
+    const scheduleIndex = mockSchedules.findIndex(s => s.id === id);
+    if (scheduleIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch làm việc' },
+        { status: 404 }
+      );
+    }
+
+    const updatedSchedule: Schedule = {
+      ...mockSchedules[scheduleIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockSchedules[scheduleIndex] = updatedSchedule;
+    return HttpResponse.json(updatedSchedule);
+  }),
+
+  // DELETE /doctor-schedules/:id - Delete schedule
+  http.delete('/api/doctor-schedules/:id', ({ params }) => {
+    const id = params.id as string;
+    const scheduleIndex = mockSchedules.findIndex(s => s.id === id);
+    
+    if (scheduleIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch làm việc' },
+        { status: 404 }
+      );
+    }
+
+    mockSchedules.splice(scheduleIndex, 1);
+    return HttpResponse.json({ message: 'Xóa lịch làm việc thành công' });
+  }),
+
+  // PATCH /doctor-schedules/:id/toggle - Toggle schedule status
+  http.patch('/api/doctor-schedules/:id/toggle', ({ params }) => {
+    const id = params.id as string;
+    const scheduleIndex = mockSchedules.findIndex(s => s.id === id);
+    
+    if (scheduleIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch làm việc' },
+        { status: 404 }
+      );
+    }
+
+    const updatedSchedule: Schedule = {
+      ...mockSchedules[scheduleIndex],
+      isActive: !mockSchedules[scheduleIndex].isActive,
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockSchedules[scheduleIndex] = updatedSchedule;
+    return HttpResponse.json(updatedSchedule);
   }),
 ];

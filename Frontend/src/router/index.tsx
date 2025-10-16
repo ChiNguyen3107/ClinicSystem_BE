@@ -8,7 +8,9 @@ const Dashboard = React.lazy(() => import('@/pages/Dashboard').then(module => ({
 const Login = React.lazy(() => import('@/pages/Login').then(module => ({ default: module.Login })));
 const Patients = React.lazy(() => import('@/pages/patients/PatientsPage').then(module => ({ default: module.PatientsPage })));
 const Appointments = React.lazy(() => import('@/pages/Appointments').then(module => ({ default: module.Appointments })));
-const Doctors = React.lazy(() => import('@/pages/Doctors').then(module => ({ default: module.Doctors })));
+const Doctors = React.lazy(() => import('@/pages/doctors/DoctorsPage').then(module => ({ default: module.DoctorsPage })));
+const DoctorWizard = React.lazy(() => import('@/pages/doctors/DoctorWizard').then(module => ({ default: module.DoctorWizard })));
+const DoctorDetail = React.lazy(() => import('@/pages/doctors/DoctorDetail').then(module => ({ default: module.DoctorDetail })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -87,6 +89,30 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Doctors />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'doctors/new',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <DoctorWizard />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'doctors/:id',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <DoctorDetail />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'doctors/:id/edit',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <DoctorWizard />
           </Suspense>
         ),
       },
