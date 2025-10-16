@@ -23,6 +23,7 @@ const BillingEditor = React.lazy(() => import('@/pages/billing/BillingEditor').t
 const BillingDetail = React.lazy(() => import('@/pages/billing/BillingDetail').then(module => ({ default: module.BillingDetail })));
 const ReportsPage = React.lazy(() => import('@/pages/reports/ReportsPage').then(module => ({ default: module.ReportsPage })));
 const AdvancedPage = React.lazy(() => import('@/pages/advanced/AdvancedPage').then(module => ({ default: module.default })));
+const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage').then(module => ({ default: module.SettingsPage })));
 
 // Public pages
 const PublicHome = React.lazy(() => import('@/pages/public/Home').then(module => ({ default: module.Home })));
@@ -284,6 +285,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <AdvancedPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <SettingsPage />
           </Suspense>
         ),
       },
