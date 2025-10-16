@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useAuthStore } from '@/store/auth.store';
+import { OptimizedSuspense, OptimizedErrorBoundary } from '@/components/performance/OptimizedComponents';
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -24,6 +25,7 @@ const BillingDetail = React.lazy(() => import('@/pages/billing/BillingDetail').t
 const ReportsPage = React.lazy(() => import('@/pages/reports/ReportsPage').then(module => ({ default: module.ReportsPage })));
 const AdvancedPage = React.lazy(() => import('@/pages/advanced/AdvancedPage').then(module => ({ default: module.default })));
 const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage').then(module => ({ default: module.SettingsPage })));
+const PerformanceDashboard = React.lazy(() => import('@/pages/performance/PerformanceDashboard').then(module => ({ default: module.PerformanceDashboard })));
 
 // Public pages
 const PublicHome = React.lazy(() => import('@/pages/public/Home').then(module => ({ default: module.Home })));
@@ -35,6 +37,14 @@ const PublicBookingStatus = React.lazy(() => import('@/pages/public/BookingStatu
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center h-64">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Optimized loading component with better UX
+const OptimizedLoadingSpinner = () => (
+  <div className="flex flex-col items-center justify-center h-64 space-y-4">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <p className="text-sm text-gray-600">Đang tải...</p>
   </div>
 );
 
@@ -65,9 +75,9 @@ export const router = createBrowserRouter([
     path: '/login',
     element: (
       <PublicRoute>
-        <Suspense fallback={<LoadingSpinner />}>
+        <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
           <Login />
-        </Suspense>
+        </OptimizedSuspense>
       </PublicRoute>
     ),
   },
@@ -75,33 +85,33 @@ export const router = createBrowserRouter([
   {
     path: '/public',
     element: (
-      <Suspense fallback={<LoadingSpinner />}>
+      <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
         <PublicHome />
-      </Suspense>
+      </OptimizedSuspense>
     ),
   },
   {
     path: '/public/booking',
     element: (
-      <Suspense fallback={<LoadingSpinner />}>
+      <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
         <PublicBooking />
-      </Suspense>
+      </OptimizedSuspense>
     ),
   },
   {
     path: '/public/doctors/:id',
     element: (
-      <Suspense fallback={<LoadingSpinner />}>
+      <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
         <PublicDoctor />
-      </Suspense>
+      </OptimizedSuspense>
     ),
   },
   {
     path: '/public/booking/:id/status',
     element: (
-      <Suspense fallback={<LoadingSpinner />}>
+      <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
         <PublicBookingStatus />
-      </Suspense>
+      </OptimizedSuspense>
     ),
   },
   {
@@ -115,185 +125,193 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <DashboardPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'patients',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <Patients />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'appointments',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <Appointments />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'appointments/calendar',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <Appointments />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'doctors',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <Doctors />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'doctors/new',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <DoctorWizard />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'doctors/:id',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <DoctorDetail />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'doctors/:id/edit',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <DoctorWizard />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'visits',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <VisitsPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'visits/:id',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <VisitEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'visits/:id/edit',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <VisitEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'services',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <ServicesPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'prescriptions',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <PrescriptionsPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'prescriptions/new',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <PrescriptionEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'prescriptions/:id',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <PrescriptionDetail />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'prescriptions/:id/edit',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <PrescriptionEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'billing',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <BillingPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'billing/new',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <BillingEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'billing/:id',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <BillingDetail />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'billing/:id/edit',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <BillingEditor />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'reports',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <ReportsPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'advanced',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <AdvancedPage />
-          </Suspense>
+          </OptimizedSuspense>
         ),
       },
       {
         path: 'settings',
         element: (
-          <Suspense fallback={<LoadingSpinner />}>
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
             <SettingsPage />
-          </Suspense>
+          </OptimizedSuspense>
+        ),
+      },
+      {
+        path: 'performance',
+        element: (
+          <OptimizedSuspense fallback={<OptimizedLoadingSpinner />}>
+            <PerformanceDashboard />
+          </OptimizedSuspense>
         ),
       },
     ],
