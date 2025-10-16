@@ -34,4 +34,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("dateOfBirth") LocalDate dateOfBirth,
             @Param("phone") String phone);
 
+    // Dashboard methods
+    Long countByCreatedDateBetween(LocalDate startDate, LocalDate endDate);
+
 }

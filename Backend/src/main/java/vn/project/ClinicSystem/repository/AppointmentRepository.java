@@ -1,5 +1,6 @@
 package vn.project.ClinicSystem.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -57,5 +58,16 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
                         @Param("startAt") LocalDateTime startAt,
                         @Param("endAt") LocalDateTime endAt,
                         @Param("ignoreAppointmentId") Long ignoreAppointmentId);
+
+        // Dashboard methods
+        Long countByAppointmentDate(LocalDate date);
+        
+        List<Appointment> findByAppointmentDate(LocalDate date);
+        
+        List<Appointment> findByAppointmentDateBetween(LocalDate startDate, LocalDate endDate);
+        
+        Long countByStatus(String status);
+        
+        List<Appointment> findByStatus(String status);
 
 }

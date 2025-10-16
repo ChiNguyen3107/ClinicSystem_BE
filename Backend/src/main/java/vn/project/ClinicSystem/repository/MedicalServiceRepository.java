@@ -19,4 +19,7 @@ public interface MedicalServiceRepository extends JpaRepository<MedicalService, 
     List<MedicalService> findByClinicRoomId(Long clinicRoomId);
     
     Page<MedicalService> findByClinicRoomId(Long clinicRoomId, Pageable pageable);
+    
+    // Dashboard methods
+    List<MedicalService> findTop5ByOrderByUsageCountDesc();
 }

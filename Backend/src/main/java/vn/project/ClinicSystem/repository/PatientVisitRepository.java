@@ -19,4 +19,7 @@ public interface PatientVisitRepository extends JpaRepository<PatientVisit, Long
     List<PatientVisit> findByStatus(VisitStatus status);
 
     boolean existsByPrimaryAppointmentId(Long primaryAppointmentId);
+    
+    // Dashboard methods
+    Long countByStatus(String status);
 }

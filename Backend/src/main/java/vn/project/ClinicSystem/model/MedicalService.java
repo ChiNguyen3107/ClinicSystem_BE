@@ -45,6 +45,9 @@ public class MedicalService {
     @Column(nullable = false)
     private Long basePrice; // đơn vị: đồng
 
+    @Column(nullable = false)
+    private Long usageCount = 0L; // số lần sử dụng dịch vụ
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "clinic_room_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
