@@ -620,3 +620,6 @@ export interface DashboardStatsResponse {
 }
 
 export type DashboardPeriod = 'today' | 'week' | 'month' | 'year';
+
+// Export report types
+export * from './report';

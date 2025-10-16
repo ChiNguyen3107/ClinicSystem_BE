@@ -1,199 +1,274 @@
 import * as XLSX from 'xlsx';
-import { formatCurrency } from './currency';
-import type { Billing, BillingStatistics, BillingExportOptions } from '@/types';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { 
+  RevenueData, 
+  PatientData, 
+  AppointmentData, 
+  ServiceData,
+  ExportOptions 
+} from '@/types/report';
 
-/**
- * Export billing data to Excel
- */
-export async function exportBillingsToExcel(
-  billings: Billing[],
-  filename = 'billings.xlsx'
-): Promise<void> {
-  const worksheet = XLSX.utils.json_to_sheet(
-    billings.map(billing => ({
-      'Mã hóa đơn': billing.code,
-      'Tên bệnh nhân': billing.patientName,
-      'Ngày tạo': new Date(billing.createdAt).toLocaleDateString('vi-VN'),
-      'Tổng tiền': billing.total,
-      'Trạng thái': billing.status,
-      'Phương thức thanh toán': billing.paymentMethod,
-      'Ghi chú': billing.notes || ''
-    }))
-  );
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Hóa đơn');
-  
-  XLSX.writeFile(workbook, filename);
-}
-
-/**
- * Export billing statistics to Excel
- */
-export async function exportBillingStatsToExcel(
-  stats: BillingStatistics,
-  filename = 'billing-statistics.xlsx'
-): Promise<void> {
-  const workbook = XLSX.utils.book_new();
-
-  // Tổng quan
-  const overviewData = [
-    ['Tổng doanh thu', formatCurrency(stats.totalRevenue)],
-    ['Tổng số hóa đơn', stats.totalBills],
-    ['Giá trị trung bình', formatCurrency(stats.averageBillValue)]
-  ];
-  const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
-  XLSX.utils.book_append_sheet(workbook, overviewSheet, 'Tổng quan');
-
-  // Doanh thu theo phương thức
-  const methodData = [
-    ['Phương thức', 'Doanh thu'],
-    ...Object.entries(stats.revenueByMethod).map(([method, revenue]) => [
-      method,
-      formatCurrency(revenue)
-    ])
-  ];
-  const methodSheet = XLSX.utils.aoa_to_sheet(methodData);
-  XLSX.utils.book_append_sheet(workbook, methodSheet, 'Theo phương thức');
-
-  // Doanh thu theo thời gian
-  const dailyData = [
-    ['Ngày', 'Doanh thu'],
-    ...stats.revenueByPeriod.daily.map(item => [
-      item.date,
-      formatCurrency(item.revenue)
-    ])
-  ];
-  const dailySheet = XLSX.utils.aoa_to_sheet(dailyData);
-  XLSX.utils.book_append_sheet(workbook, dailySheet, 'Doanh thu hàng ngày');
-
-  XLSX.writeFile(workbook, filename);
-}
-
-/**
- * Generate PDF content for billing
- */
-export function generateBillingPDFContent(billing: Billing): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Hóa đơn ${billing.code}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .billing-info { margin-bottom: 20px; }
-        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .table th { background-color: #f2f2f2; }
-        .total-section { margin-top: 20px; text-align: right; }
-        .total-row { font-weight: bold; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>HÓA ĐƠN DỊCH VỤ Y TẾ</h1>
-        <p>Mã hóa đơn: ${billing.code}</p>
-      </div>
+export class ExportService {
+  static async exportToExcel(
+    data: RevenueData | PatientData | AppointmentData | ServiceData,
+    options: ExportOptions
+  ): Promise<Blob> {
+    const workbook = XLSX.utils.book_new();
+    
+    // Create summary sheet
+    const summaryData = this.createSummarySheet(data, options);
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Tổng quan');
+    
+    // Create detailed sheets based on data type
+    if ('trends' in data) {
+      // Revenue or Patient data with trends
+      const trendsSheet = XLSX.utils.json_to_sheet(data.trends);
+      XLSX.utils.book_append_sheet(workbook, trendsSheet, 'Xu hướng');
+    }
+    
+    if ('byDoctor' in data) {
+      // Revenue or Appointment data with doctor breakdown
+      const doctorSheet = XLSX.utils.json_to_sheet(data.byDoctor);
+      XLSX.utils.book_append_sheet(workbook, doctorSheet, 'Theo bác sĩ');
+    }
+    
+    if ('byService' in data) {
+      // Revenue or Service data with service breakdown
+      const serviceSheet = XLSX.utils.json_to_sheet(data.byService);
+      XLSX.utils.book_append_sheet(workbook, serviceSheet, 'Theo dịch vụ');
+    }
+    
+    if ('byAge' in data) {
+      // Patient data with demographics
+      const ageSheet = XLSX.utils.json_to_sheet(data.byAge);
+      XLSX.utils.book_append_sheet(workbook, ageSheet, 'Theo độ tuổi');
       
-      <div class="billing-info">
-        <p><strong>Bệnh nhân:</strong> ${billing.patientName}</p>
-        <p><strong>Ngày tạo:</strong> ${new Date(billing.createdAt).toLocaleDateString('vi-VN')}</p>
-        <p><strong>Trạng thái:</strong> ${billing.status}</p>
-      </div>
-
-      <h3>Dịch vụ</h3>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Tên dịch vụ</th>
-            <th>Số lượng</th>
-            <th>Đơn giá</th>
-            <th>Thành tiền</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${billing.services.map(service => `
-            <tr>
-              <td>${service.serviceName}</td>
-              <td>${service.quantity}</td>
-              <td>${formatCurrency(service.unitPrice)}</td>
-              <td>${formatCurrency(service.totalPrice)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-
-      <h3>Thuốc</h3>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Tên thuốc</th>
-            <th>Số lượng</th>
-            <th>Đơn giá</th>
-            <th>Thành tiền</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${billing.medications.map(medication => `
-            <tr>
-              <td>${medication.medicationName}</td>
-              <td>${medication.quantity}</td>
-              <td>${formatCurrency(medication.unitPrice)}</td>
-              <td>${formatCurrency(medication.totalPrice)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-
-      <div class="total-section">
-        <p>Tổng tiền dịch vụ: ${formatCurrency(billing.subtotal)}</p>
-        ${billing.discountAmount > 0 ? `<p>Giảm giá: ${formatCurrency(billing.discountAmount)}</p>` : ''}
-        <p>VAT (${billing.vatRate}%): ${formatCurrency(billing.vatAmount)}</p>
-        <p class="total-row">Tổng cộng: ${formatCurrency(billing.total)}</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-/**
- * Download file from blob
- */
-export function downloadFile(blob: Blob, filename: string): void {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-}
-
-/**
- * Format date for export
- */
-export function formatDateForExport(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-}
-
-/**
- * Format date and time for export
- */
-export function formatDateTimeForExport(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleString('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+      const genderSheet = XLSX.utils.json_to_sheet(data.byGender);
+      XLSX.utils.book_append_sheet(workbook, genderSheet, 'Theo giới tính');
+      
+      const locationSheet = XLSX.utils.json_to_sheet(data.byLocation);
+      XLSX.utils.book_append_sheet(workbook, locationSheet, 'Theo địa phương');
+    }
+    
+    if ('cancelReasons' in data) {
+      // Appointment data with cancel reasons
+      const cancelSheet = XLSX.utils.json_to_sheet(data.cancelReasons);
+      XLSX.utils.book_append_sheet(workbook, cancelSheet, 'Lý do hủy');
+    }
+    
+    if ('inventory' in data) {
+      // Service data with inventory
+      const inventorySheet = XLSX.utils.json_to_sheet(data.inventory);
+      XLSX.utils.book_append_sheet(workbook, inventorySheet, 'Tồn kho');
+    }
+    
+    // Generate Excel file
+    const excelBuffer = XLSX.write(workbook, { 
+      bookType: 'xlsx', 
+      type: 'array' 
+    });
+    
+    return new Blob([excelBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+  }
+  
+  static async exportToPDF(
+    data: RevenueData | PatientData | AppointmentData | ServiceData,
+    options: ExportOptions,
+    chartElements?: HTMLElement[]
+  ): Promise<Blob> {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let yPosition = 20;
+    
+    // Add title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('BÁO CÁO PHÒNG KHÁM', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+    
+    // Add date range
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    const dateRange = `${options.dateRange.from.toLocaleDateString('vi-VN')} - ${options.dateRange.to.toLocaleDateString('vi-VN')}`;
+    pdf.text(`Thời gian: ${dateRange}`, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 20;
+    
+    // Add summary data
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('TỔNG QUAN', 20, yPosition);
+    yPosition += 10;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Add summary based on data type
+    if ('total' in data) {
+      pdf.text(`Tổng: ${data.total.toLocaleString('vi-VN')}`, 20, yPosition);
+      yPosition += 7;
+    }
+    
+    if ('completionRate' in data) {
+      pdf.text(`Tỷ lệ hoàn thành: ${data.completionRate.toFixed(1)}%`, 20, yPosition);
+      yPosition += 7;
+    }
+    
+    if ('newPatients' in data) {
+      pdf.text(`Bệnh nhân mới: ${data.newPatients}`, 20, yPosition);
+      yPosition += 7;
+      pdf.text(`Bệnh nhân tái khám: ${data.returningPatients}`, 20, yPosition);
+      yPosition += 7;
+    }
+    
+    // Add charts if available
+    if (options.includeCharts && chartElements) {
+      for (const chartElement of chartElements) {
+        if (yPosition > pageHeight - 50) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        try {
+          const canvas = await html2canvas(chartElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth - 40;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          if (yPosition + imgHeight > pageHeight - 20) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          
+          pdf.addImage(imgData, 'PNG', 20, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 10;
+        } catch (error) {
+          console.error('Error capturing chart:', error);
+        }
+      }
+    }
+    
+    // Add detailed data tables
+    yPosition += 10;
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CHI TIẾT', 20, yPosition);
+    yPosition += 10;
+    
+    // Add data tables based on type
+    if ('byDoctor' in data && data.byDoctor.length > 0) {
+      this.addDataTable(pdf, data.byDoctor, 'Theo bác sĩ', yPosition, pageWidth);
+      yPosition += 50;
+    }
+    
+    if ('byService' in data && data.byService.length > 0) {
+      this.addDataTable(pdf, data.byService, 'Theo dịch vụ', yPosition, pageWidth);
+      yPosition += 50;
+    }
+    
+    if ('byAge' in data && data.byAge.length > 0) {
+      this.addDataTable(pdf, data.byAge, 'Theo độ tuổi', yPosition, pageWidth);
+      yPosition += 50;
+    }
+    
+    return pdf.output('blob');
+  }
+  
+  private static createSummarySheet(
+    data: RevenueData | PatientData | AppointmentData | ServiceData,
+    options: ExportOptions
+  ): any[][] {
+    const summary: any[][] = [
+      ['BÁO CÁO PHÒNG KHÁM'],
+      [`Thời gian: ${options.dateRange.from.toLocaleDateString('vi-VN')} - ${options.dateRange.to.toLocaleDateString('vi-VN')}`],
+      [''],
+    ];
+    
+    // Add summary based on data type
+    if ('total' in data) {
+      summary.push(['Tổng', data.total]);
+    }
+    
+    if ('completionRate' in data) {
+      summary.push(['Tỷ lệ hoàn thành (%)', data.completionRate.toFixed(1)]);
+    }
+    
+    if ('newPatients' in data) {
+      summary.push(['Bệnh nhân mới', data.newPatients]);
+      summary.push(['Bệnh nhân tái khám', data.returningPatients]);
+    }
+    
+    if ('averageWaitingTime' in data) {
+      summary.push(['Thời gian chờ trung bình (phút)', data.averageWaitingTime]);
+    }
+    
+    return summary;
+  }
+  
+  private static addDataTable(
+    pdf: jsPDF,
+    data: any[],
+    title: string,
+    yPosition: number,
+    pageWidth: number
+  ): void {
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, 20, yPosition);
+    yPosition += 7;
+    
+    pdf.setFont('helvetica', 'normal');
+    
+    // Add table headers and data
+    const headers = Object.keys(data[0] || {});
+    const colWidth = (pageWidth - 40) / headers.length;
+    
+    // Headers
+    headers.forEach((header, index) => {
+      pdf.text(header, 20 + index * colWidth, yPosition);
+    });
+    yPosition += 5;
+    
+    // Data rows
+    data.slice(0, 10).forEach((row) => {
+      headers.forEach((header, index) => {
+        const value = row[header];
+        const text = typeof value === 'number' ? value.toLocaleString('vi-VN') : String(value);
+        pdf.text(text, 20 + index * colWidth, yPosition);
+      });
+      yPosition += 5;
+    });
+  }
+  
+  static async exportReport(
+    data: RevenueData | PatientData | AppointmentData | ServiceData,
+    options: ExportOptions,
+    chartElements?: HTMLElement[]
+  ): Promise<Blob> {
+    if (options.format === 'excel') {
+      return this.exportToExcel(data, options);
+    } else {
+      return this.exportToPDF(data, options, chartElements);
+    }
+  }
+  
+  static downloadFile(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
 }

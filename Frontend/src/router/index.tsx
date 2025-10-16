@@ -21,6 +21,7 @@ const PrescriptionDetail = React.lazy(() => import('@/pages/prescriptions/Prescr
 const BillingPage = React.lazy(() => import('@/pages/billing/BillingPage').then(module => ({ default: module.BillingPage })));
 const BillingEditor = React.lazy(() => import('@/pages/billing/BillingEditor').then(module => ({ default: module.BillingEditor })));
 const BillingDetail = React.lazy(() => import('@/pages/billing/BillingDetail').then(module => ({ default: module.BillingDetail })));
+const ReportsPage = React.lazy(() => import('@/pages/reports/ReportsPage').then(module => ({ default: module.ReportsPage })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -227,6 +228,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <BillingEditor />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'reports',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <ReportsPage />
           </Suspense>
         ),
       },
