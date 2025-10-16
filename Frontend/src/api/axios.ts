@@ -65,4 +65,5 @@ api.interceptors.response.use(
   }
 );
 
+export const axiosInstance = api;
 export default api;

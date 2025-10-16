@@ -7,3 +7,14 @@ Frontend/dist/
 .idea/
 *.iml
 *.log
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation files
+**/*.md
+README_PATIENTS.md

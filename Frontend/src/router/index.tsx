@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const Login = React.lazy(() => import('@/pages/Login').then(module => ({ default: module.Login })));
-const Patients = React.lazy(() => import('@/pages/Patients').then(module => ({ default: module.Patients })));
+const Patients = React.lazy(() => import('@/pages/patients/PatientsPage').then(module => ({ default: module.PatientsPage })));
 const Appointments = React.lazy(() => import('@/pages/Appointments').then(module => ({ default: module.Appointments })));
 const Doctors = React.lazy(() => import('@/pages/Doctors').then(module => ({ default: module.Doctors })));
 
