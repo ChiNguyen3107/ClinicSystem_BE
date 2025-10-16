@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { Patient, PatientListParams } from '@/types/patient';
+import { PatientService } from '@/api/services/patient.service';
 
 interface PatientState {
   // Data
@@ -34,6 +35,9 @@ interface PatientState {
   setSort: (field: string, direction: 'ASC' | 'DESC') => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  
+  // API actions
+  fetchPatients: (params?: PatientListParams) => Promise<void>;
   
   // Form actions
   openForm: (patient?: Patient) => void;
@@ -91,6 +95,26 @@ export const usePatientStore = create<PatientState>()(
       setLoading: (loading) => set({ loading }),
       
       setError: (error) => set({ error }),
+      
+      fetchPatients: async (params) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await PatientService.getPatients(params);
+          set({
+            patients: response.content,
+            totalElements: response.totalElements,
+            totalPages: response.totalPages,
+            currentPage: response.number,
+            pageSize: response.size,
+            loading: false
+          });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Lỗi khi tải danh sách bệnh nhân',
+            loading: false
+          });
+        }
+      },
       
       openForm: (patient) => set({ 
         isFormOpen: true, 

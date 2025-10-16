@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 const Dashboard = React.lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const Login = React.lazy(() => import('@/pages/Login').then(module => ({ default: module.Login })));
 const Patients = React.lazy(() => import('@/pages/patients/PatientsPage').then(module => ({ default: module.PatientsPage })));
-const Appointments = React.lazy(() => import('@/pages/Appointments').then(module => ({ default: module.Appointments })));
+const Appointments = React.lazy(() => import('@/pages/appointments/AppointmentsPage').then(module => ({ default: module.default })));
 const Doctors = React.lazy(() => import('@/pages/doctors/DoctorsPage').then(module => ({ default: module.DoctorsPage })));
 const DoctorWizard = React.lazy(() => import('@/pages/doctors/DoctorWizard').then(module => ({ default: module.DoctorWizard })));
 const DoctorDetail = React.lazy(() => import('@/pages/doctors/DoctorDetail').then(module => ({ default: module.DoctorDetail })));
@@ -78,6 +78,14 @@ export const router = createBrowserRouter([
       },
       {
         path: 'appointments',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <Appointments />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'appointments/calendar',
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Appointments />

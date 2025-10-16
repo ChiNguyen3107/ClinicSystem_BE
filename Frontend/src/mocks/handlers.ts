@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { Patient, PatientListResponse, PatientDetail } from '@/types/patient';
 import type { Doctor, DoctorListResponse, DoctorStats, CreateDoctorRequest } from '@/types/doctor';
 import type { Schedule, WeeklySchedule } from '@/types/schedule';
+import type { Appointment, AppointmentStatus, AppointmentStats } from '@/types/appointment';
 
 // Mock data
 const mockPatients: Patient[] = [
@@ -575,6 +576,227 @@ const mockSchedules: Schedule[] = [
   },
 ];
 
+// Mock appointments data
+const mockAppointments: Appointment[] = [
+  {
+    id: '1',
+    code: 'LH001',
+    patientId: '1',
+    patientName: 'Nguyễn Văn An',
+    patientPhone: '0123456789',
+    doctorId: '1',
+    doctorName: 'BS. Nguyễn Văn Bác',
+    doctorSpecialty: 'Tim mạch',
+    roomId: '1',
+    roomName: 'Phòng 101',
+    appointmentDate: '2024-02-15',
+    startTime: '09:00',
+    endTime: '09:30',
+    duration: 30,
+    status: AppointmentStatus.CONFIRMED,
+    reason: 'Khám tim mạch định kỳ',
+    notes: 'Bệnh nhân có tiền sử huyết áp cao',
+    createdAt: '2024-02-01T08:30:00Z',
+    updatedAt: '2024-02-01T08:30:00Z',
+  },
+  {
+    id: '2',
+    code: 'LH002',
+    patientId: '2',
+    patientName: 'Trần Thị Bình',
+    patientPhone: '0987654321',
+    doctorId: '2',
+    doctorName: 'BS. Trần Thị Sĩ',
+    doctorSpecialty: 'Nhi khoa',
+    roomId: '2',
+    roomName: 'Phòng 102',
+    appointmentDate: '2024-02-15',
+    startTime: '10:00',
+    endTime: '10:45',
+    duration: 45,
+    status: AppointmentStatus.PENDING,
+    reason: 'Khám sức khỏe cho trẻ em',
+    notes: '',
+    createdAt: '2024-02-01T09:15:00Z',
+    updatedAt: '2024-02-01T09:15:00Z',
+  },
+  {
+    id: '3',
+    code: 'LH003',
+    patientId: '3',
+    patientName: 'Lê Văn Cường',
+    patientPhone: '0369258147',
+    doctorId: '3',
+    doctorName: 'BS. Lê Văn Cường',
+    doctorSpecialty: 'Ngoại khoa',
+    roomId: '3',
+    roomName: 'Phòng 103',
+    appointmentDate: '2024-02-16',
+    startTime: '14:00',
+    endTime: '15:00',
+    duration: 60,
+    status: AppointmentStatus.COMPLETED,
+    reason: 'Tư vấn phẫu thuật',
+    notes: 'Bệnh nhân cần phẫu thuật nội soi',
+    createdAt: '2024-02-01T10:00:00Z',
+    updatedAt: '2024-02-01T10:00:00Z',
+  },
+  {
+    id: '4',
+    code: 'LH004',
+    patientId: '4',
+    patientName: 'Phạm Thị Dung',
+    patientPhone: '0741852963',
+    doctorId: '4',
+    doctorName: 'BS. Phạm Thị Dung',
+    doctorSpecialty: 'Sản phụ khoa',
+    roomId: '4',
+    roomName: 'Phòng 104',
+    appointmentDate: '2024-02-16',
+    startTime: '08:30',
+    endTime: '09:00',
+    duration: 30,
+    status: AppointmentStatus.CANCELLED,
+    reason: 'Khám phụ khoa',
+    notes: '',
+    cancellationReason: 'Bệnh nhân hủy lịch do công việc',
+    createdAt: '2024-02-01T11:30:00Z',
+    updatedAt: '2024-02-01T11:30:00Z',
+  },
+  {
+    id: '5',
+    code: 'LH005',
+    patientId: '5',
+    patientName: 'Hoàng Văn Em',
+    patientPhone: '0852741963',
+    doctorId: '1',
+    doctorName: 'BS. Nguyễn Văn Bác',
+    doctorSpecialty: 'Tim mạch',
+    roomId: '1',
+    roomName: 'Phòng 101',
+    appointmentDate: '2024-02-17',
+    startTime: '11:00',
+    endTime: '11:30',
+    duration: 30,
+    status: AppointmentStatus.NO_SHOW,
+    reason: 'Khám tim mạch',
+    notes: 'Bệnh nhân có tiền sử bệnh tim',
+    createdAt: '2024-02-01T14:20:00Z',
+    updatedAt: '2024-02-01T14:20:00Z',
+  },
+  {
+    id: '6',
+    code: 'LH006',
+    patientId: '6',
+    patientName: 'Võ Thị Phương',
+    patientPhone: '0963852741',
+    doctorId: '2',
+    doctorName: 'BS. Trần Thị Sĩ',
+    doctorSpecialty: 'Nhi khoa',
+    roomId: '2',
+    roomName: 'Phòng 102',
+    appointmentDate: '2024-02-18',
+    startTime: '15:00',
+    endTime: '15:45',
+    duration: 45,
+    status: AppointmentStatus.CONFIRMED,
+    reason: 'Tiêm chủng cho trẻ',
+    notes: '',
+    createdAt: '2024-02-01T15:45:00Z',
+    updatedAt: '2024-02-01T15:45:00Z',
+  },
+  {
+    id: '7',
+    code: 'LH007',
+    patientId: '7',
+    patientName: 'Đặng Văn Giang',
+    patientPhone: '0147258369',
+    doctorId: '3',
+    doctorName: 'BS. Lê Văn Cường',
+    doctorSpecialty: 'Ngoại khoa',
+    roomId: '3',
+    roomName: 'Phòng 103',
+    appointmentDate: '2024-02-19',
+    startTime: '09:30',
+    endTime: '10:30',
+    duration: 60,
+    status: AppointmentStatus.PENDING,
+    reason: 'Khám ngoại khoa',
+    notes: 'Bệnh nhân cần kiểm tra định kỳ',
+    createdAt: '2024-02-01T16:10:00Z',
+    updatedAt: '2024-02-01T16:10:00Z',
+  },
+  {
+    id: '8',
+    code: 'LH008',
+    patientId: '8',
+    patientName: 'Bùi Thị Hoa',
+    patientPhone: '0638520741',
+    doctorId: '4',
+    doctorName: 'BS. Phạm Thị Dung',
+    doctorSpecialty: 'Sản phụ khoa',
+    roomId: '4',
+    roomName: 'Phòng 104',
+    appointmentDate: '2024-02-20',
+    startTime: '13:00',
+    endTime: '13:30',
+    duration: 30,
+    status: AppointmentStatus.CONFIRMED,
+    reason: 'Khám sản phụ khoa',
+    notes: '',
+    createdAt: '2024-02-01T17:25:00Z',
+    updatedAt: '2024-02-01T17:25:00Z',
+  },
+  {
+    id: '9',
+    code: 'LH009',
+    patientId: '9',
+    patientName: 'Ngô Văn Ích',
+    patientPhone: '0852741963',
+    doctorId: '1',
+    doctorName: 'BS. Nguyễn Văn Bác',
+    doctorSpecialty: 'Tim mạch',
+    roomId: '1',
+    roomName: 'Phòng 101',
+    appointmentDate: '2024-02-21',
+    startTime: '16:00',
+    endTime: '16:30',
+    duration: 30,
+    status: AppointmentStatus.PENDING,
+    reason: 'Khám tim mạch',
+    notes: 'Bệnh nhân có tiền sử tiểu đường',
+    createdAt: '2024-02-01T18:40:00Z',
+    updatedAt: '2024-02-01T18:40:00Z',
+  },
+  {
+    id: '10',
+    code: 'LH010',
+    patientId: '10',
+    patientName: 'Lý Thị Kim',
+    patientPhone: '0741852963',
+    doctorId: '2',
+    doctorName: 'BS. Trần Thị Sĩ',
+    doctorSpecialty: 'Nhi khoa',
+    roomId: '2',
+    roomName: 'Phòng 102',
+    appointmentDate: '2024-02-22',
+    startTime: '10:30',
+    endTime: '11:15',
+    duration: 45,
+    status: AppointmentStatus.CONFIRMED,
+    reason: 'Khám sức khỏe trẻ em',
+    notes: '',
+    createdAt: '2024-02-01T19:55:00Z',
+    updatedAt: '2024-02-01T19:55:00Z',
+  },
+];
+
+// Generate appointment code
+const generateAppointmentCode = (): string => {
+  const timestamp = Date.now().toString().slice(-6);
+  return `LH${timestamp}`;
+};
+
 // Generate patient code
 const generatePatientCode = (): string => {
   const timestamp = Date.now().toString().slice(-8);
@@ -1103,4 +1325,378 @@ export const handlers = [
     mockSchedules[scheduleIndex] = updatedSchedule;
     return HttpResponse.json(updatedSchedule);
   }),
+
+  // Appointment API handlers
+  // GET /appointments - List appointments with filters
+  http.get('/api/appointments', ({ request }) => {
+    const url = new URL(request.url);
+    const doctorId = url.searchParams.get('doctorId');
+    const status = url.searchParams.get('status');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
+    const patientName = url.searchParams.get('patientName');
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+
+    // Filter appointments
+    let filteredAppointments = mockAppointments;
+    
+    if (doctorId) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.doctorId === doctorId);
+    }
+    
+    if (status) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.status === status);
+    }
+    
+    if (dateFrom) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate >= dateFrom);
+    }
+    
+    if (dateTo) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate <= dateTo);
+    }
+    
+    if (patientName) {
+      filteredAppointments = filteredAppointments.filter(apt =>
+        apt.patientName.toLowerCase().includes(patientName.toLowerCase())
+      );
+    }
+
+    // Sort by appointment date and time
+    filteredAppointments.sort((a, b) => {
+      const dateA = new Date(`${a.appointmentDate} ${a.startTime}`);
+      const dateB = new Date(`${b.appointmentDate} ${b.startTime}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    // Pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const content = filteredAppointments.slice(startIndex, endIndex);
+    const totalElements = filteredAppointments.length;
+    const totalPages = Math.ceil(totalElements / size);
+
+    const response = {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= totalPages - 1,
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  // GET /appointments/:id - Get appointment by ID
+  http.get('/api/appointments/:id', ({ params }) => {
+    const id = params.id as string;
+    const appointment = mockAppointments.find(apt => apt.id === id);
+    
+    if (!appointment) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch hẹn' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json(appointment);
+  }),
+
+  // POST /appointments - Create new appointment
+  http.post('/api/appointments', async ({ request }) => {
+    const data = await request.json() as any;
+    
+    const newAppointment: Appointment = {
+      id: (Math.max(...mockAppointments.map(apt => parseInt(apt.id))) + 1).toString(),
+      code: generateAppointmentCode(),
+      patientId: data.patientId,
+      patientName: mockPatients.find(p => p.id.toString() === data.patientId)?.name || 'Unknown',
+      patientPhone: mockPatients.find(p => p.id.toString() === data.patientId)?.phone || '',
+      doctorId: data.doctorId,
+      doctorName: mockDoctors.find(d => d.id === data.doctorId)?.fullName || 'Unknown',
+      doctorSpecialty: mockDoctors.find(d => d.id === data.doctorId)?.specialty || 'Unknown',
+      roomId: data.roomId,
+      roomName: `Phòng ${data.roomId}`,
+      appointmentDate: data.appointmentDate,
+      startTime: data.startTime,
+      endTime: calculateEndTime(data.startTime, data.duration),
+      duration: data.duration,
+      status: AppointmentStatus.PENDING,
+      reason: data.reason,
+      notes: data.notes || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockAppointments.push(newAppointment);
+    return HttpResponse.json(newAppointment, { status: 201 });
+  }),
+
+  // PUT /appointments/:id - Update appointment
+  http.put('/api/appointments/:id', async ({ params, request }) => {
+    const id = params.id as string;
+    const data = await request.json() as any;
+    
+    const appointmentIndex = mockAppointments.findIndex(apt => apt.id === id);
+    if (appointmentIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch hẹn' },
+        { status: 404 }
+      );
+    }
+
+    const updatedAppointment: Appointment = {
+      ...mockAppointments[appointmentIndex],
+      ...data,
+      endTime: data.startTime ? calculateEndTime(data.startTime, data.duration || mockAppointments[appointmentIndex].duration) : mockAppointments[appointmentIndex].endTime,
+      updatedAt: new Date().toISOString(),
+    };
+
+    mockAppointments[appointmentIndex] = updatedAppointment;
+    return HttpResponse.json(updatedAppointment);
+  }),
+
+  // DELETE /appointments/:id - Delete appointment
+  http.delete('/api/appointments/:id', ({ params }) => {
+    const id = params.id as string;
+    const appointmentIndex = mockAppointments.findIndex(apt => apt.id === id);
+    
+    if (appointmentIndex === -1) {
+      return HttpResponse.json(
+        { message: 'Không tìm thấy lịch hẹn' },
+        { status: 404 }
+      );
+    }
+
+    mockAppointments.splice(appointmentIndex, 1);
+    return HttpResponse.json({ message: 'Xóa lịch hẹn thành công' });
+  }),
+
+  // GET /appointments/doctor/:doctorId - Get appointments by doctor
+  http.get('/api/appointments/doctor/:doctorId', ({ params, request }) => {
+    const doctorId = params.doctorId as string;
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
+    const patientName = url.searchParams.get('patientName');
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+
+    let filteredAppointments = mockAppointments.filter(apt => apt.doctorId === doctorId);
+    
+    if (status) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.status === status);
+    }
+    
+    if (dateFrom) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate >= dateFrom);
+    }
+    
+    if (dateTo) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate <= dateTo);
+    }
+    
+    if (patientName) {
+      filteredAppointments = filteredAppointments.filter(apt =>
+        apt.patientName.toLowerCase().includes(patientName.toLowerCase())
+      );
+    }
+
+    // Pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const content = filteredAppointments.slice(startIndex, endIndex);
+    const totalElements = filteredAppointments.length;
+    const totalPages = Math.ceil(totalElements / size);
+
+    const response = {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= totalPages - 1,
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  // GET /appointments/patient/:patientId - Get appointments by patient
+  http.get('/api/appointments/patient/:patientId', ({ params, request }) => {
+    const patientId = params.patientId as string;
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+
+    let filteredAppointments = mockAppointments.filter(apt => apt.patientId === patientId);
+    
+    if (status) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.status === status);
+    }
+    
+    if (dateFrom) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate >= dateFrom);
+    }
+    
+    if (dateTo) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate <= dateTo);
+    }
+
+    // Pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const content = filteredAppointments.slice(startIndex, endIndex);
+    const totalElements = filteredAppointments.length;
+    const totalPages = Math.ceil(totalElements / size);
+
+    const response = {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= totalPages - 1,
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  // GET /appointments/status/:status - Get appointments by status
+  http.get('/api/appointments/status/:status', ({ params, request }) => {
+    const status = params.status as AppointmentStatus;
+    const url = new URL(request.url);
+    const doctorId = url.searchParams.get('doctorId');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
+    const patientName = url.searchParams.get('patientName');
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+
+    let filteredAppointments = mockAppointments.filter(apt => apt.status === status);
+    
+    if (doctorId) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.doctorId === doctorId);
+    }
+    
+    if (dateFrom) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate >= dateFrom);
+    }
+    
+    if (dateTo) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate <= dateTo);
+    }
+    
+    if (patientName) {
+      filteredAppointments = filteredAppointments.filter(apt =>
+        apt.patientName.toLowerCase().includes(patientName.toLowerCase())
+      );
+    }
+
+    // Pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const content = filteredAppointments.slice(startIndex, endIndex);
+    const totalElements = filteredAppointments.length;
+    const totalPages = Math.ceil(totalElements / size);
+
+    const response = {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= totalPages - 1,
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  // GET /appointments/stats - Get appointment statistics
+  http.get('/api/appointments/stats', () => {
+    const today = new Date().toISOString().split('T')[0];
+    const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const monthStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const stats: AppointmentStats = {
+      total: mockAppointments.length,
+      pending: mockAppointments.filter(apt => apt.status === AppointmentStatus.PENDING).length,
+      confirmed: mockAppointments.filter(apt => apt.status === AppointmentStatus.CONFIRMED).length,
+      cancelled: mockAppointments.filter(apt => apt.status === AppointmentStatus.CANCELLED).length,
+      completed: mockAppointments.filter(apt => apt.status === AppointmentStatus.COMPLETED).length,
+      noShow: mockAppointments.filter(apt => apt.status === AppointmentStatus.NO_SHOW).length,
+      todayCount: mockAppointments.filter(apt => apt.appointmentDate === today).length,
+      weekCount: mockAppointments.filter(apt => apt.appointmentDate >= weekStart).length,
+      monthCount: mockAppointments.filter(apt => apt.appointmentDate >= monthStart).length,
+    };
+
+    return HttpResponse.json(stats);
+  }),
+
+  // POST /appointments/check-conflicts - Check appointment conflicts
+  http.post('/api/appointments/check-conflicts', async ({ request }) => {
+    const data = await request.json() as any;
+    
+    const conflicts = mockAppointments.filter(apt => {
+      if (apt.doctorId !== data.doctorId) return false;
+      if (apt.appointmentDate !== data.appointmentDate) return false;
+      if (data.excludeId && apt.id === data.excludeId) return false;
+      
+      const aptStart = new Date(`${apt.appointmentDate} ${apt.startTime}`);
+      const aptEnd = new Date(`${apt.appointmentDate} ${apt.endTime}`);
+      const newStart = new Date(`${data.appointmentDate} ${data.startTime}`);
+      const newEnd = new Date(`${data.appointmentDate} ${data.startTime}`);
+      newEnd.setMinutes(newEnd.getMinutes() + data.duration);
+      
+      return (newStart < aptEnd && newEnd > aptStart);
+    });
+
+    return HttpResponse.json({
+      hasConflict: conflicts.length > 0,
+      conflicts
+    });
+  }),
+
+  // GET /appointments/date-range - Get appointments by date range
+  http.get('/api/appointments/date-range', ({ request }) => {
+    const url = new URL(request.url);
+    const startDate = url.searchParams.get('startDate');
+    const endDate = url.searchParams.get('endDate');
+    const doctorId = url.searchParams.get('doctorId');
+
+    let filteredAppointments = mockAppointments;
+    
+    if (startDate) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate >= startDate);
+    }
+    
+    if (endDate) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.appointmentDate <= endDate);
+    }
+    
+    if (doctorId) {
+      filteredAppointments = filteredAppointments.filter(apt => apt.doctorId === doctorId);
+    }
+
+    return HttpResponse.json(filteredAppointments);
+  }),
 ];
+
+// Helper function to calculate end time
+function calculateEndTime(startTime: string, duration: number): string {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const startMinutes = hours * 60 + minutes;
+  const endMinutes = startMinutes + duration;
+  const endHours = Math.floor(endMinutes / 60);
+  const endMins = endMinutes % 60;
+  return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+}
