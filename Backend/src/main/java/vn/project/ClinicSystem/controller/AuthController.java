@@ -17,6 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import vn.project.ClinicSystem.model.User;
@@ -35,6 +44,7 @@ import vn.project.ClinicSystem.util.SecurityUtil;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "API quản lý xác thực và phân quyền")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -64,8 +74,66 @@ public class AuthController {
         this.revokedTokenService = revokedTokenService;
     }
 
+    @Operation(
+        summary = "Đăng nhập hệ thống",
+        description = "Xác thực người dùng và trả về access token và refresh token"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Đăng nhập thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ResLoginDTO.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Thông tin đăng nhập không chính xác",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Unauthorized",
+                    value = """
+                    {
+                        "error": "Unauthorized",
+                        "message": "Invalid credentials"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429", 
+            description = "Quá nhiều lần thử đăng nhập",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Too Many Requests",
+                    value = """
+                    {
+                        "error": "Too Many Requests",
+                        "message": "Rate limit exceeded"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PostMapping("/login")
-    public ResponseEntity<ResLoginDTO> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+    public ResponseEntity<ResLoginDTO> login(
+        @Parameter(description = "Thông tin đăng nhập", required = true)
+        @Valid @RequestBody LoginDTO loginDTO, 
+        HttpServletRequest request) {
         String clientIp = getClientIpAddress(request);
         
         // Check rate limiting
@@ -108,6 +176,43 @@ public class AuthController {
         }
     }
 
+    @Operation(
+        summary = "Đăng xuất hệ thống",
+        description = "Đăng xuất người dùng và thu hồi token"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Đăng xuất thành công",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "message": "Đăng xuất thành công"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Chưa đăng nhập",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Unauthorized",
+                    value = """
+                    {
+                        "error": "Unauthorized",
+                        "message": "Authentication required"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
@@ -133,8 +238,49 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
     
+    @Operation(
+        summary = "Làm mới token",
+        description = "Sử dụng refresh token để lấy access token mới"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Token được làm mới thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ResLoginDTO.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Refresh token không hợp lệ hoặc đã hết hạn",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Unauthorized",
+                    value = """
+                    {
+                        "error": "Unauthorized",
+                        "message": "Invalid refresh token"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PostMapping("/refresh")
-    public ResponseEntity<ResLoginDTO> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
+    public ResponseEntity<ResLoginDTO> refreshToken(
+        @Parameter(description = "Refresh token để làm mới access token", required = true)
+        @Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
         try {
             var refreshToken = refreshTokenService.findByToken(refreshTokenDTO.getRefreshToken())
                 .orElseThrow(() -> new RuntimeException("Refresh token không hợp lệ"));
@@ -156,8 +302,46 @@ public class AuthController {
         }
     }
     
+    @Operation(
+        summary = "Quên mật khẩu",
+        description = "Gửi email đặt lại mật khẩu cho người dùng"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Email đặt lại mật khẩu đã được gửi",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "message": "Email đặt lại mật khẩu đã được gửi"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Email không tồn tại hoặc lỗi xử lý",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Bad Request",
+                    value = """
+                    {
+                        "error": "Email không tồn tại"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PostMapping("/forgot-password")
-    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordDTO forgotPasswordDTO) {
+    public ResponseEntity<Map<String, String>> forgotPassword(
+        @Parameter(description = "Email để đặt lại mật khẩu", required = true)
+        @Valid @RequestBody ForgotPasswordDTO forgotPasswordDTO) {
         try {
             User user = userRepository.findByEmail(forgotPasswordDTO.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
@@ -170,8 +354,46 @@ public class AuthController {
         }
     }
     
+    @Operation(
+        summary = "Đặt lại mật khẩu",
+        description = "Đặt lại mật khẩu mới bằng token từ email"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Mật khẩu đã được đặt lại thành công",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "message": "Mật khẩu đã được đặt lại thành công"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Token không hợp lệ hoặc đã hết hạn",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Bad Request",
+                    value = """
+                    {
+                        "error": "Token không hợp lệ hoặc đã hết hạn"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+    public ResponseEntity<Map<String, String>> resetPassword(
+        @Parameter(description = "Token và mật khẩu mới", required = true)
+        @Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
         try {
             passwordResetService.resetPassword(resetPasswordDTO.getToken(), resetPasswordDTO.getNewPassword());
             return ResponseEntity.ok(Map.of("message", "Mật khẩu đã được đặt lại thành công"));

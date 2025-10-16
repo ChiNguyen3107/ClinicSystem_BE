@@ -20,12 +20,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import vn.project.ClinicSystem.model.Patient;
 import vn.project.ClinicSystem.service.PatientService;
 
 @RestController
 @RequestMapping("/patients")
+@Tag(name = "Patient Management", description = "API quản lý bệnh nhân")
 public class PatientController {
     private final PatientService patientService;
 
@@ -33,17 +43,116 @@ public class PatientController {
         this.patientService = patientService;
     }
 
+    @Operation(
+        summary = "Tạo bệnh nhân mới",
+        description = "Tạo thông tin bệnh nhân mới trong hệ thống"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "Bệnh nhân được tạo thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Patient.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "id": 1,
+                        "name": "Nguyễn Văn A",
+                        "email": "nguyenvana@email.com",
+                        "phone": "0123456789",
+                        "dateOfBirth": "1990-01-01",
+                        "address": "123 Đường ABC, Quận 1, TP.HCM",
+                        "gender": "MALE",
+                        "medicalHistory": "Không có tiền sử bệnh"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Dữ liệu đầu vào không hợp lệ",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Bad Request",
+                    value = """
+                    {
+                        "error": "Validation failed",
+                        "message": "Email is required"
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Không có quyền truy cập",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Forbidden",
+                    value = """
+                    {
+                        "error": "Forbidden",
+                        "message": "Access denied"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")
     @PostMapping
-    public ResponseEntity<Patient> createPatient(@Valid @RequestBody Patient patient) {
+    public ResponseEntity<Patient> createPatient(
+        @Parameter(description = "Thông tin bệnh nhân", required = true)
+        @Valid @RequestBody Patient patient) {
         Patient created = patientService.create(patient);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @Operation(
+        summary = "Lấy danh sách bệnh nhân",
+        description = "Lấy danh sách bệnh nhân với phân trang và tìm kiếm"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Lấy danh sách bệnh nhân thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Page.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                    {
+                        "content": [
+                            {
+                                "id": 1,
+                                "name": "Nguyễn Văn A",
+                                "email": "nguyenvana@email.com",
+                                "phone": "0123456789"
+                            }
+                        ],
+                        "totalElements": 1,
+                        "totalPages": 1,
+                        "size": 10,
+                        "number": 0
+                    }
+                    """
+                )
+            )
+        )
+    })
     @GetMapping
     public ResponseEntity<Page<Patient>> getPatients(
+            @Parameter(description = "Số trang (bắt đầu từ 0)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số lượng items per page", example = "10")
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Từ khóa tìm kiếm", example = "Nguyễn Văn A")
             @RequestParam(value = "keyword", required = false) String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Patient> patients = patientService.searchByKeyword(keyword, pageable);
