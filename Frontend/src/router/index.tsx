@@ -18,6 +18,9 @@ const ServicesPage = React.lazy(() => import('@/pages/services/ServicesPage').th
 const PrescriptionsPage = React.lazy(() => import('@/pages/prescriptions/PrescriptionsPage').then(module => ({ default: module.PrescriptionsPage })));
 const PrescriptionEditor = React.lazy(() => import('@/pages/prescriptions/PrescriptionEditor').then(module => ({ default: module.PrescriptionEditor })));
 const PrescriptionDetail = React.lazy(() => import('@/pages/prescriptions/PrescriptionDetail').then(module => ({ default: module.PrescriptionDetail })));
+const BillingPage = React.lazy(() => import('@/pages/billing/BillingPage').then(module => ({ default: module.BillingPage })));
+const BillingEditor = React.lazy(() => import('@/pages/billing/BillingEditor').then(module => ({ default: module.BillingEditor })));
+const BillingDetail = React.lazy(() => import('@/pages/billing/BillingDetail').then(module => ({ default: module.BillingDetail })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -192,6 +195,38 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <PrescriptionEditor />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'billing',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <BillingPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'billing/new',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <BillingEditor />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'billing/:id',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <BillingDetail />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'billing/:id/edit',
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <BillingEditor />
           </Suspense>
         ),
       },

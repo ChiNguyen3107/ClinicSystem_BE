@@ -7,6 +7,7 @@ import { AppointmentStatus } from '@/types/appointment';
 import type { Visit, VisitFilter } from '@/types/visit';
 import type { ServiceOrder } from '@/types/service';
 import { medicalServiceHandlers, indicatorHandlers } from './services';
+import { billingHandlers } from './billingHandlers';
 import type { Prescription, Medication, Billing, PrescriptionFilters, MedicationInteraction, MedicationBatch } from '@/types';
 
 // Mock data
@@ -2408,6 +2409,9 @@ export const handlers = [
   
   // Indicators handlers
   ...indicatorHandlers,
+
+  // Billing handlers
+  ...billingHandlers,
 
   // Prescription handlers
   ...prescriptionHandlers

@@ -318,30 +318,183 @@ export interface UpdateBatchRequest {
 
 // Billing types
 export interface Billing extends BaseEntity {
-  patient: Patient;
-  serviceOrder?: ServiceOrder;
-  totalAmount: number;
-  paidAmount: number;
+  code: string;
+  patientId: string;
+  patientName: string;
+  visitId: string;
+  total: number;
+  subtotal: number;
+  discountAmount: number;
+  discountPercentage?: number;
+  discountCode?: string;
+  vatAmount: number;
+  vatRate: number;
   status: BillingStatus;
-  paymentMethod?: string;
-  paymentDate?: string;
+  paymentMethod: PaymentMethod;
+  paidAt?: string;
   notes?: string;
-  items: BillingItem[];
+  services: BillingService[];
+  medications: BillingMedication[];
 }
 
-export enum BillingStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  PARTIALLY_PAID = 'PARTIALLY_PAID',
-  OVERDUE = 'OVERDUE',
-  CANCELLED = 'CANCELLED'
-}
-
-export interface BillingItem extends BaseEntity {
-  description: string;
+export interface BillingService {
+  id: string;
+  serviceId: string;
+  serviceName: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+}
+
+export interface BillingMedication {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface DiscountCode {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  type: DiscountType;
+  value: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: string;
+  validTo: string;
+  usageLimit?: number;
+  usedCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payment {
+  id: string;
+  billingId: string;
+  amount: number;
+  method: PaymentMethod;
+  transactionId?: string;
+  paidAt: string;
+  notes?: string;
+}
+
+export interface BillingStatistics {
+  totalRevenue: number;
+  totalBills: number;
+  averageBillValue: number;
+  revenueByMethod: Record<PaymentMethod, number>;
+  revenueByPeriod: {
+    daily: Array<{ date: string; revenue: number }>;
+    weekly: Array<{ week: string; revenue: number }>;
+    monthly: Array<{ month: string; revenue: number }>;
+  };
+  topServices: Array<{ serviceName: string; revenue: number; count: number }>;
+  topMedications: Array<{ medicationName: string; revenue: number; count: number }>;
+}
+
+export interface CreateBillingRequest {
+  visitId: string;
+  services: Array<{
+    serviceId: string;
+    quantity: number;
+  }>;
+  medications: Array<{
+    medicationId: string;
+    quantity: number;
+  }>;
+  discountCode?: string;
+  discountAmount?: number;
+  discountPercentage?: number;
+  notes?: string;
+}
+
+export interface UpdateBillingRequest {
+  services?: Array<{
+    serviceId: string;
+    quantity: number;
+  }>;
+  medications?: Array<{
+    medicationId: string;
+    quantity: number;
+  }>;
+  discountCode?: string;
+  discountAmount?: number;
+  discountPercentage?: number;
+  notes?: string;
+}
+
+export interface ProcessPaymentRequest {
+  billingId: string;
+  amount: number;
+  method: PaymentMethod;
+  transactionId?: string;
+  notes?: string;
+}
+
+export interface BillingFilters {
+  status?: BillingStatus;
+  paymentMethod?: PaymentMethod;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export interface CreateDiscountCodeRequest {
+  code: string;
+  name: string;
+  description?: string;
+  type: DiscountType;
+  value: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: string;
+  validTo: string;
+  usageLimit?: number;
+}
+
+export interface UpdateDiscountCodeRequest {
+  name?: string;
+  description?: string;
+  value?: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom?: string;
+  validTo?: string;
+  usageLimit?: number;
+  isActive?: boolean;
+}
+
+export enum BillingStatus {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED'
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  TRANSFER = 'TRANSFER',
+  CARD = 'CARD',
+  E_WALLET = 'E_WALLET'
+}
+
+export enum DiscountType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT'
+}
+
+export interface BillingExportOptions {
+  format: 'excel' | 'pdf';
+  dateFrom?: string;
+  dateTo?: string;
+  status?: BillingStatus[];
+  paymentMethod?: PaymentMethod[];
 }
 
 // API Response types

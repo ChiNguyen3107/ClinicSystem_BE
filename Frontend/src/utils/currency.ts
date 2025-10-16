@@ -61,3 +61,90 @@ export function isValidCurrency(value: string): boolean {
   const num = parseInt(cleaned, 10);
   return !isNaN(num) && num >= 0;
 }
+
+/**
+ * Calculate VAT amount
+ * @param amount - Amount before VAT
+ * @param vatRate - VAT rate (default 10%)
+ * @returns VAT amount
+ */
+export function calculateVAT(amount: number, vatRate = 10): number {
+  return Math.round((amount * vatRate) / 100);
+}
+
+/**
+ * Calculate total with VAT
+ * @param amount - Amount before VAT
+ * @param vatRate - VAT rate (default 10%)
+ * @returns Total amount including VAT
+ */
+export function calculateTotalWithVAT(amount: number, vatRate = 10): number {
+  return amount + calculateVAT(amount, vatRate);
+}
+
+/**
+ * Calculate billing totals
+ * @param subtotal - Subtotal amount
+ * @param discountAmount - Discount amount
+ * @param vatRate - VAT rate (default 10%)
+ * @returns Object with calculated amounts
+ */
+export function calculateBillingTotals(
+  subtotal: number,
+  discountAmount = 0,
+  vatRate = 10
+) {
+  const afterDiscount = Math.max(0, subtotal - discountAmount);
+  const vatAmount = calculateVAT(afterDiscount, vatRate);
+  const total = afterDiscount + vatAmount;
+
+  return {
+    subtotal,
+    discountAmount,
+    afterDiscount,
+    vatAmount,
+    vatRate,
+    total
+  };
+}
+
+/**
+ * Format currency for display in tables
+ * @param amount - Amount to format
+ * @param compact - Whether to use compact format
+ * @returns Formatted currency string
+ */
+export function formatCurrencyCompact(amount: number, compact = false): string {
+  if (compact && amount >= 1000000) {
+    const millions = Math.floor(amount / 1000000);
+    const remainder = amount % 1000000;
+    if (remainder === 0) {
+      return `${millions}M ${CURRENCY_SYMBOL}`;
+    }
+    const thousands = Math.floor(remainder / 1000);
+    return `${millions}.${thousands}M ${CURRENCY_SYMBOL}`;
+  }
+  
+  if (compact && amount >= 1000) {
+    const thousands = Math.floor(amount / 1000);
+    const remainder = amount % 1000;
+    if (remainder === 0) {
+      return `${thousands}K ${CURRENCY_SYMBOL}`;
+    }
+    return `${thousands}.${Math.floor(remainder / 100)}K ${CURRENCY_SYMBOL}`;
+  }
+  
+  return formatCurrency(amount);
+}
+
+/**
+ * Calculate percentage discount
+ * @param originalAmount - Original amount
+ * @param discountedAmount - Amount after discount
+ * @returns Discount percentage
+ */
+export function calculateDiscountPercentage(originalAmount: number, discountedAmount: number): number {
+  if (originalAmount === 0) return 0;
+  const discountAmount = originalAmount - discountedAmount;
+  return Math.round((discountAmount / originalAmount) * 100);
+}
