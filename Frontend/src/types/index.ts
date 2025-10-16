@@ -159,13 +159,17 @@ export interface ServiceOrderItem extends BaseEntity {
 
 // Prescription types
 export interface Prescription extends BaseEntity {
+  code: string;
   patient: Patient;
   doctor: Doctor;
   visit?: PatientVisit;
   diagnosis: string;
   notes?: string;
   status: PrescriptionStatus;
+  totalAmount: number;
   items: PrescriptionItem[];
+  qrCode?: string;
+  printedAt?: string;
 }
 
 export enum PrescriptionStatus {
@@ -182,16 +186,44 @@ export interface PrescriptionItem extends BaseEntity {
   duration: string;
   instructions: string;
   quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  batch?: MedicationBatch;
 }
 
 // Medication types
 export interface Medication extends BaseEntity {
   name: string;
+  genericName?: string;
   description?: string;
+  category: MedicationCategory;
   unit: string;
   price: number;
   status: 'ACTIVE' | 'INACTIVE';
+  contraindications?: string[];
+  sideEffects?: string[];
+  interactions?: MedicationInteraction[];
   batches: MedicationBatch[];
+}
+
+export type MedicationCategory = 
+  | 'ANTIBIOTIC' 
+  | 'ANALGESIC' 
+  | 'ANTI_INFLAMMATORY' 
+  | 'VITAMIN' 
+  | 'CARDIOVASCULAR'
+  | 'RESPIRATORY'
+  | 'GASTROINTESTINAL'
+  | 'NEUROLOGICAL'
+  | 'OTHER';
+
+export interface MedicationInteraction {
+  id: number;
+  medication1: Medication;
+  medication2: Medication;
+  severity: 'LOW' | 'MODERATE' | 'HIGH' | 'SEVERE';
+  description: string;
+  recommendation: string;
 }
 
 export interface MedicationBatch extends BaseEntity {
@@ -200,7 +232,88 @@ export interface MedicationBatch extends BaseEntity {
   expiryDate: string;
   quantity: number;
   remainingQuantity: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'OUT_OF_STOCK';
+  status: 'ACTIVE' | 'EXPIRED' | 'OUT_OF_STOCK' | 'NEAR_EXPIRY';
+  supplier?: string;
+  costPrice?: number;
+}
+
+// Prescription Filter types
+export interface PrescriptionFilters {
+  status?: PrescriptionStatus;
+  doctorId?: number;
+  patientId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+// Prescription Create/Update types
+export interface CreatePrescriptionRequest {
+  patientId: number;
+  doctorId: number;
+  visitId?: number;
+  diagnosis: string;
+  notes?: string;
+  items: CreatePrescriptionItemRequest[];
+}
+
+export interface CreatePrescriptionItemRequest {
+  medicationId: number;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+  quantity: number;
+  batchId?: number;
+}
+
+export interface UpdatePrescriptionRequest {
+  diagnosis?: string;
+  notes?: string;
+  status?: PrescriptionStatus;
+  items?: CreatePrescriptionItemRequest[];
+}
+
+// Medication Create/Update types
+export interface CreateMedicationRequest {
+  name: string;
+  genericName?: string;
+  description?: string;
+  category: MedicationCategory;
+  unit: string;
+  price: number;
+  contraindications?: string[];
+  sideEffects?: string[];
+}
+
+export interface UpdateMedicationRequest {
+  name?: string;
+  genericName?: string;
+  description?: string;
+  category?: MedicationCategory;
+  unit?: string;
+  price?: number;
+  status?: 'ACTIVE' | 'INACTIVE';
+  contraindications?: string[];
+  sideEffects?: string[];
+}
+
+// Batch Create/Update types
+export interface CreateBatchRequest {
+  medicationId: number;
+  batchNumber: string;
+  expiryDate: string;
+  quantity: number;
+  supplier?: string;
+  costPrice?: number;
+}
+
+export interface UpdateBatchRequest {
+  batchNumber?: string;
+  expiryDate?: string;
+  quantity?: number;
+  supplier?: string;
+  costPrice?: number;
 }
 
 // Billing types

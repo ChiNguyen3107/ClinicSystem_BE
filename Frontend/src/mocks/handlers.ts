@@ -7,7 +7,7 @@ import { AppointmentStatus } from '@/types/appointment';
 import type { Visit, VisitFilter } from '@/types/visit';
 import type { ServiceOrder } from '@/types/service';
 import { medicalServiceHandlers, indicatorHandlers } from './services';
-import type { Prescription, Medication, Billing } from '@/types/medication';
+import type { Prescription, Medication, Billing, PrescriptionFilters, MedicationInteraction, MedicationBatch } from '@/types';
 
 // Mock data
 const mockPatients: Patient[] = [
@@ -2407,7 +2407,399 @@ export const handlers = [
   ...medicalServiceHandlers,
   
   // Indicators handlers
-  ...indicatorHandlers
+  ...indicatorHandlers,
+
+  // Prescription handlers
+  ...prescriptionHandlers
+];
+
+// Mock data for prescriptions
+const mockMedications: Medication[] = [
+  {
+    id: 1,
+    name: 'Amoxicillin',
+    genericName: 'Amoxicillin trihydrate',
+    description: 'Kháng sinh nhóm beta-lactam',
+    category: 'ANTIBIOTIC',
+    unit: 'viên',
+    price: 5000,
+    status: 'ACTIVE',
+    contraindications: ['Dị ứng penicillin', 'Suy gan nặng'],
+    sideEffects: ['Buồn nôn', 'Tiêu chảy', 'Phát ban'],
+    interactions: [],
+    batches: [],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 2,
+    name: 'Paracetamol',
+    genericName: 'Acetaminophen',
+    description: 'Thuốc giảm đau, hạ sốt',
+    category: 'ANALGESIC',
+    unit: 'viên',
+    price: 2000,
+    status: 'ACTIVE',
+    contraindications: ['Suy gan nặng', 'Nghiện rượu'],
+    sideEffects: ['Buồn nôn', 'Đau bụng'],
+    interactions: [],
+    batches: [],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 3,
+    name: 'Ibuprofen',
+    genericName: 'Ibuprofen',
+    description: 'Thuốc chống viêm không steroid',
+    category: 'ANTI_INFLAMMATORY',
+    unit: 'viên',
+    price: 3000,
+    status: 'ACTIVE',
+    contraindications: ['Loét dạ dày', 'Suy thận'],
+    sideEffects: ['Đau bụng', 'Buồn nôn', 'Chóng mặt'],
+    interactions: [],
+    batches: [],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  }
+];
+
+const mockPrescriptions: Prescription[] = [
+  {
+    id: 1,
+    code: 'DT001',
+    patient: mockPatients[0],
+    doctor: mockDoctors[0],
+    visit: undefined,
+    diagnosis: 'Viêm họng cấp',
+    notes: 'Bệnh nhân cần nghỉ ngơi, uống nhiều nước',
+    status: 'ACTIVE',
+    totalAmount: 15000,
+    items: [
+      {
+        id: 1,
+        medication: mockMedications[0],
+        dosage: '500mg',
+        frequency: '3 lần/ngày',
+        duration: '7 ngày',
+        instructions: 'Uống sau ăn',
+        quantity: 21,
+        unitPrice: 5000,
+        totalPrice: 105000,
+        batch: undefined,
+        createdAt: '2024-01-15T08:30:00Z',
+        updatedAt: '2024-01-15T08:30:00Z'
+      }
+    ],
+    qrCode: 'QR_DT001_20240115',
+    printedAt: '2024-01-15T09:00:00Z',
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z'
+  },
+  {
+    id: 2,
+    code: 'DT002',
+    patient: mockPatients[1],
+    doctor: mockDoctors[1],
+    visit: undefined,
+    diagnosis: 'Cảm cúm',
+    notes: '',
+    status: 'COMPLETED',
+    totalAmount: 8000,
+    items: [
+      {
+        id: 2,
+        medication: mockMedications[1],
+        dosage: '500mg',
+        frequency: '3 lần/ngày',
+        duration: '5 ngày',
+        instructions: 'Uống khi sốt',
+        quantity: 15,
+        unitPrice: 2000,
+        totalPrice: 30000,
+        batch: undefined,
+        createdAt: '2024-01-16T09:15:00Z',
+        updatedAt: '2024-01-16T09:15:00Z'
+      }
+    ],
+    qrCode: 'QR_DT002_20240116',
+    printedAt: '2024-01-16T09:30:00Z',
+    createdAt: '2024-01-16T09:15:00Z',
+    updatedAt: '2024-01-16T09:15:00Z'
+  }
+];
+
+const mockInteractions: MedicationInteraction[] = [
+  {
+    id: 1,
+    medication1: mockMedications[0],
+    medication2: mockMedications[1],
+    severity: 'MODERATE',
+    description: 'Amoxicillin có thể làm giảm hiệu quả của Paracetamol',
+    recommendation: 'Nên uống cách nhau ít nhất 2 giờ'
+  }
+];
+
+// Prescription handlers
+const prescriptionHandlers = [
+  // Get prescriptions
+  http.get('/api/prescriptions', ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+    const search = url.searchParams.get('search');
+    const status = url.searchParams.get('status');
+    const doctorId = url.searchParams.get('doctorId');
+    const patientId = url.searchParams.get('patientId');
+
+    let filteredPrescriptions = [...mockPrescriptions];
+
+    if (search) {
+      filteredPrescriptions = filteredPrescriptions.filter(p => 
+        p.code.toLowerCase().includes(search.toLowerCase()) ||
+        p.patient.fullName.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (status) {
+      filteredPrescriptions = filteredPrescriptions.filter(p => p.status === status);
+    }
+
+    if (doctorId) {
+      filteredPrescriptions = filteredPrescriptions.filter(p => p.doctor.id === parseInt(doctorId));
+    }
+
+    if (patientId) {
+      filteredPrescriptions = filteredPrescriptions.filter(p => p.patient.id === parseInt(patientId));
+    }
+
+    const start = page * size;
+    const end = start + size;
+    const content = filteredPrescriptions.slice(start, end);
+
+    return HttpResponse.json({
+      content,
+      totalElements: filteredPrescriptions.length,
+      totalPages: Math.ceil(filteredPrescriptions.length / size),
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= Math.ceil(filteredPrescriptions.length / size) - 1
+    });
+  }),
+
+  // Get prescription by ID
+  http.get('/api/prescriptions/:id', ({ params }) => {
+    const id = parseInt(params.id as string);
+    const prescription = mockPrescriptions.find(p => p.id === id);
+    
+    if (!prescription) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    return HttpResponse.json(prescription);
+  }),
+
+  // Create prescription
+  http.post('/api/prescriptions', async ({ request }) => {
+    const data = await request.json() as any;
+    const newPrescription: Prescription = {
+      id: mockPrescriptions.length + 1,
+      code: `DT${String(mockPrescriptions.length + 1).padStart(3, '0')}`,
+      patient: mockPatients.find(p => p.id === data.patientId)!,
+      doctor: mockDoctors.find(d => d.id === data.doctorId)!,
+      visit: undefined,
+      diagnosis: data.diagnosis,
+      notes: data.notes,
+      status: 'DRAFT',
+      totalAmount: 0,
+      items: [],
+      qrCode: undefined,
+      printedAt: undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    mockPrescriptions.push(newPrescription);
+    return HttpResponse.json(newPrescription, { status: 201 });
+  }),
+
+  // Update prescription
+  http.put('/api/prescriptions/:id', async ({ params, request }) => {
+    const id = parseInt(params.id as string);
+    const data = await request.json() as any;
+    const index = mockPrescriptions.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    mockPrescriptions[index] = {
+      ...mockPrescriptions[index],
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    
+    return HttpResponse.json(mockPrescriptions[index]);
+  }),
+
+  // Delete prescription
+  http.delete('/api/prescriptions/:id', ({ params }) => {
+    const id = parseInt(params.id as string);
+    const index = mockPrescriptions.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    mockPrescriptions.splice(index, 1);
+    return HttpResponse.json({ message: 'Xóa đơn thuốc thành công' });
+  }),
+
+  // Update prescription status
+  http.patch('/api/prescriptions/:id/status', async ({ params, request }) => {
+    const id = parseInt(params.id as string);
+    const { status } = await request.json() as { status: string };
+    const index = mockPrescriptions.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    mockPrescriptions[index].status = status as any;
+    mockPrescriptions[index].updatedAt = new Date().toISOString();
+    
+    return HttpResponse.json(mockPrescriptions[index]);
+  }),
+
+  // Print prescription
+  http.post('/api/prescriptions/:id/print', ({ params }) => {
+    const id = parseInt(params.id as string);
+    const index = mockPrescriptions.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    const qrCode = `QR_${mockPrescriptions[index].code}_${Date.now()}`;
+    mockPrescriptions[index].qrCode = qrCode;
+    mockPrescriptions[index].printedAt = new Date().toISOString();
+    mockPrescriptions[index].updatedAt = new Date().toISOString();
+    
+    return HttpResponse.json({
+      qrCode,
+      printedAt: mockPrescriptions[index].printedAt
+    });
+  }),
+
+  // Export prescription PDF
+  http.get('/api/prescriptions/:id/export/pdf', ({ params }) => {
+    const id = parseInt(params.id as string);
+    const prescription = mockPrescriptions.find(p => p.id === id);
+    
+    if (!prescription) {
+      return HttpResponse.json({ message: 'Không tìm thấy đơn thuốc' }, { status: 404 });
+    }
+    
+    // Mock PDF blob
+    const pdfBlob = new Blob(['Mock PDF content'], { type: 'application/pdf' });
+    return new HttpResponse(pdfBlob, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="don-thuoc-${prescription.code}.pdf"`
+      }
+    });
+  }),
+
+  // Verify prescription
+  http.get('/api/prescriptions/verify/:qrCode', ({ params }) => {
+    const qrCode = params.qrCode as string;
+    const prescription = mockPrescriptions.find(p => p.qrCode === qrCode);
+    
+    if (!prescription) {
+      return HttpResponse.json({ message: 'Mã QR không hợp lệ' }, { status: 404 });
+    }
+    
+    return HttpResponse.json(prescription);
+  }),
+
+  // Get medications
+  http.get('/api/medications', ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+    const search = url.searchParams.get('search');
+    const category = url.searchParams.get('category');
+
+    let filteredMedications = [...mockMedications];
+
+    if (search) {
+      filteredMedications = filteredMedications.filter(m => 
+        m.name.toLowerCase().includes(search.toLowerCase()) ||
+        (m.genericName && m.genericName.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
+
+    if (category) {
+      filteredMedications = filteredMedications.filter(m => m.category === category);
+    }
+
+    const start = page * size;
+    const end = start + size;
+    const content = filteredMedications.slice(start, end);
+
+    return HttpResponse.json({
+      content,
+      totalElements: filteredMedications.length,
+      totalPages: Math.ceil(filteredMedications.length / size),
+      size,
+      number: page,
+      first: page === 0,
+      last: page >= Math.ceil(filteredMedications.length / size) - 1
+    });
+  }),
+
+  // Search medications
+  http.get('/api/medications/search', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('q') || '';
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+
+    const results = mockMedications
+      .filter(m => 
+        m.name.toLowerCase().includes(query.toLowerCase()) ||
+        (m.genericName && m.genericName.toLowerCase().includes(query.toLowerCase()))
+      )
+      .slice(0, limit);
+
+    return HttpResponse.json(results);
+  }),
+
+  // Get medication interactions
+  http.post('/api/medications/interactions', async ({ request }) => {
+    const { medicationIds } = await request.json() as { medicationIds: number[] };
+    
+    // Simple mock: return interactions if both medications are in the list
+    const interactions = mockInteractions.filter(i => 
+      medicationIds.includes(i.medication1.id) && medicationIds.includes(i.medication2.id)
+    );
+    
+    return HttpResponse.json(interactions);
+  }),
+
+  // Check specific interaction
+  http.get('/api/medications/:id1/interactions/:id2', ({ params }) => {
+    const id1 = parseInt(params.id1 as string);
+    const id2 = parseInt(params.id2 as string);
+    
+    const interaction = mockInteractions.find(i => 
+      (i.medication1.id === id1 && i.medication2.id === id2) ||
+      (i.medication1.id === id2 && i.medication2.id === id1)
+    );
+    
+    return HttpResponse.json(interaction || null);
+  })
 ];
 
 

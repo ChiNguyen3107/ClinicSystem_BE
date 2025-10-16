@@ -1,82 +1,106 @@
-import { api } from '../axios';
-import { 
-  Medication, 
-  Prescription, 
-  CreatePrescriptionRequest,
-  Billing,
-  CreateBillingRequest 
-} from '@/types/medication';
+import { axios } from '../axios';
+import type {
+  Medication,
+  CreateMedicationRequest,
+  UpdateMedicationRequest,
+  MedicationInteraction,
+  PaginatedResponse,
+  ApiResponse
+} from '@/types';
 
 export const medicationService = {
-  // Get all medications
-  async getMedications(): Promise<Medication[]> {
-    const response = await api.get('/medications');
+  // Lấy danh sách thuốc
+  async getMedications(params?: {
+    search?: string;
+    category?: string;
+    status?: 'ACTIVE' | 'INACTIVE';
+    page?: number;
+    size?: number;
+    sort?: string;
+    direction?: 'ASC' | 'DESC';
+  }): Promise<PaginatedResponse<Medication>> {
+    const response = await axios.get('/medications', { params });
     return response.data;
   },
 
-  // Get medication by ID
-  async getMedicationById(id: string): Promise<Medication> {
-    const response = await api.get(`/medications/${id}`);
+  // Lấy thuốc theo ID
+  async getMedicationById(id: number): Promise<Medication> {
+    const response = await axios.get(`/medications/${id}`);
     return response.data;
   },
 
-  // Search medications
-  async searchMedications(query: string): Promise<Medication[]> {
-    const response = await api.get('/medications/search', { params: { q: query } });
+  // Tạo thuốc mới
+  async createMedication(data: CreateMedicationRequest): Promise<Medication> {
+    const response = await axios.post('/medications', data);
     return response.data;
   },
 
-  // Get medications by category
-  async getMedicationsByCategory(category: string): Promise<Medication[]> {
-    const response = await api.get('/medications', { params: { category } });
+  // Cập nhật thuốc
+  async updateMedication(id: number, data: UpdateMedicationRequest): Promise<Medication> {
+    const response = await axios.put(`/medications/${id}`, data);
     return response.data;
   },
 
-  // Prescription operations
-  async getPrescriptionByVisit(visitId: string): Promise<Prescription | null> {
-    const response = await api.get(`/visits/${visitId}/prescription`);
-    return response.data;
+  // Xóa thuốc
+  async deleteMedication(id: number): Promise<void> {
+    await axios.delete(`/medications/${id}`);
   },
 
-  async createPrescription(visitId: string, data: CreatePrescriptionRequest): Promise<Prescription> {
-    const response = await api.post(`/visits/${visitId}/prescription`, data);
-    return response.data;
-  },
-
-  async updatePrescription(visitId: string, data: CreatePrescriptionRequest): Promise<Prescription> {
-    const response = await api.put(`/visits/${visitId}/prescription`, data);
-    return response.data;
-  },
-
-  async deletePrescription(visitId: string): Promise<void> {
-    await api.delete(`/visits/${visitId}/prescription`);
-  },
-
-  // Billing operations
-  async getBillingByVisit(visitId: string): Promise<Billing | null> {
-    const response = await api.get(`/visits/${visitId}/billing`);
-    return response.data;
-  },
-
-  async createBilling(visitId: string, data: CreateBillingRequest): Promise<Billing> {
-    const response = await api.post(`/visits/${visitId}/billing`, data);
-    return response.data;
-  },
-
-  async updateBilling(visitId: string, data: CreateBillingRequest): Promise<Billing> {
-    const response = await api.put(`/visits/${visitId}/billing`, data);
-    return response.data;
-  },
-
-  async markBillingAsPaid(visitId: string): Promise<Billing> {
-    const response = await api.patch(`/visits/${visitId}/billing/paid`);
-    return response.data;
-  },
-
-  async generateBillingPDF(visitId: string): Promise<Blob> {
-    const response = await api.get(`/visits/${visitId}/billing/pdf`, {
-      responseType: 'blob'
+  // Tìm kiếm thuốc (autocomplete)
+  async searchMedications(query: string, limit: number = 10): Promise<Medication[]> {
+    const response = await axios.get('/medications/search', {
+      params: { q: query, limit }
     });
     return response.data;
   },
+
+  // Lấy tương tác thuốc
+  async getMedicationInteractions(medicationIds: number[]): Promise<MedicationInteraction[]> {
+    const response = await axios.post('/medications/interactions', { medicationIds });
+    return response.data;
+  },
+
+  // Kiểm tra tương tác thuốc
+  async checkInteractions(medicationId1: number, medicationId2: number): Promise<MedicationInteraction | null> {
+    const response = await axios.get(`/medications/${medicationId1}/interactions/${medicationId2}`);
+    return response.data;
+  },
+
+  // Lấy thuốc sắp hết hạn
+  async getExpiringMedications(days: number = 30): Promise<Medication[]> {
+    const response = await axios.get('/medications/expiring', {
+      params: { days }
+    });
+    return response.data;
+  },
+
+  // Lấy thuốc hết hàng
+  async getOutOfStockMedications(): Promise<Medication[]> {
+    const response = await axios.get('/medications/out-of-stock');
+    return response.data;
+  },
+
+  // Cập nhật giá thuốc hàng loạt
+  async updateBulkPrices(updates: Array<{ id: number; price: number }>): Promise<void> {
+    await axios.patch('/medications/bulk-prices', { updates });
+  },
+
+  // Lấy lịch sử giá thuốc
+  async getPriceHistory(medicationId: number, params?: {
+    page?: number;
+    size?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<PaginatedResponse<{
+    id: number;
+    medicationId: number;
+    oldPrice: number;
+    newPrice: number;
+    changedAt: string;
+    changedBy: string;
+    reason?: string;
+  }>> {
+    const response = await axios.get(`/medications/${medicationId}/price-history`, { params });
+    return response.data;
+  }
 };

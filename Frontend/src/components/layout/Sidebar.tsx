@@ -22,6 +22,7 @@ const navigation = [
   { name: 'Lịch hẹn', href: '/appointments', icon: Calendar },
   { name: 'Bác sĩ', href: '/doctors', icon: UserCheck },
   { name: 'Khám bệnh', href: '/visits', icon: Stethoscope },
+  { name: 'Đơn thuốc', href: '/prescriptions', icon: FileText },
   { name: 'Dịch vụ', href: '/services', icon: Package },
   { name: 'Thuốc', href: '/medications', icon: Pill },
   { name: 'Hóa đơn', href: '/billing', icon: CreditCard },
