@@ -117,6 +117,57 @@ export function formatValidationError(error: z.ZodError): string {
   return error.errors.map(err => err.message).join(', ');
 }
 
+// Visit validation schemas
+export const createVisitSchema = z.object({
+  patientId: z.string().min(1, 'Bệnh nhân không được để trống'),
+  doctorId: z.string().min(1, 'Bác sĩ không được để trống'),
+  appointmentId: z.string().optional(),
+  preliminaryDx: z.string().min(1, 'Chẩn đoán sơ bộ không được để trống').max(500, 'Chẩn đoán sơ bộ không được quá 500 ký tự'),
+  symptoms: z.string().min(1, 'Triệu chứng không được để trống').max(1000, 'Triệu chứng không được quá 1000 ký tự'),
+  clinicalNotes: z.string().max(1000, 'Ghi chú lâm sàng không được quá 1000 ký tự').optional(),
+});
+
+export const updateVisitSchema = z.object({
+  preliminaryDx: z.string().min(1, 'Chẩn đoán sơ bộ không được để trống').max(500, 'Chẩn đoán sơ bộ không được quá 500 ký tự').optional(),
+  symptoms: z.string().min(1, 'Triệu chứng không được để trống').max(1000, 'Triệu chứng không được quá 1000 ký tự').optional(),
+  clinicalNotes: z.string().max(1000, 'Ghi chú lâm sàng không được quá 1000 ký tự').optional(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+});
+
+// Service Order validation schemas
+export const createServiceOrderSchema = z.object({
+  serviceId: z.string().min(1, 'Dịch vụ không được để trống'),
+  performerId: z.string().optional(),
+  notes: z.string().max(500, 'Ghi chú không được quá 500 ký tự').optional(),
+});
+
+export const updateServiceOrderSchema = z.object({
+  performerId: z.string().optional(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  result: z.string().max(1000, 'Kết quả không được quá 1000 ký tự').optional(),
+  notes: z.string().max(500, 'Ghi chú không được quá 500 ký tự').optional(),
+});
+
+// Prescription validation schemas
+export const createPrescriptionItemSchema = z.object({
+  medicationId: z.string().min(1, 'Thuốc không được để trống'),
+  dosage: z.string().min(1, 'Liều lượng không được để trống').max(100, 'Liều lượng không được quá 100 ký tự'),
+  quantity: z.number().min(1, 'Số lượng phải ít nhất 1'),
+  unit: z.string().min(1, 'Đơn vị không được để trống').max(20, 'Đơn vị không được quá 20 ký tự'),
+  usageNotes: z.string().max(200, 'Hướng dẫn sử dụng không được quá 200 ký tự').optional(),
+});
+
+export const createPrescriptionSchema = z.object({
+  medications: z.array(createPrescriptionItemSchema).min(1, 'Phải có ít nhất 1 loại thuốc'),
+  notes: z.string().max(500, 'Ghi chú không được quá 500 ký tự').optional(),
+});
+
+// Billing validation schemas
+export const createBillingSchema = z.object({
+  discount: z.number().min(0, 'Giảm giá không được âm').max(100, 'Giảm giá không được quá 100%').optional(),
+  discountReason: z.string().max(200, 'Lý do giảm giá không được quá 200 ký tự').optional(),
+});
+
 // Form field validation
 export function validateField(value: any, schema: z.ZodSchema): string | null {
   const result = schema.safeParse(value);

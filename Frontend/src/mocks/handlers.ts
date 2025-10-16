@@ -2,7 +2,11 @@ import { http, HttpResponse } from 'msw';
 import type { Patient, PatientListResponse, PatientDetail } from '@/types/patient';
 import type { Doctor, DoctorListResponse, DoctorStats, CreateDoctorRequest } from '@/types/doctor';
 import type { Schedule, WeeklySchedule } from '@/types/schedule';
-import type { Appointment, AppointmentStatus, AppointmentStats } from '@/types/appointment';
+import type { Appointment, AppointmentStats } from '@/types/appointment';
+import { AppointmentStatus } from '@/types/appointment';
+import type { Visit, VisitFilter } from '@/types/visit';
+import type { ServiceOrder, MedicalService } from '@/types/service';
+import type { Prescription, Medication, Billing } from '@/types/medication';
 
 // Mock data
 const mockPatients: Patient[] = [
@@ -802,6 +806,508 @@ const generatePatientCode = (): string => {
   const timestamp = Date.now().toString().slice(-8);
   return `BN${timestamp}`;
 };
+
+// Mock data for visits
+const mockVisits: Visit[] = [
+  {
+    id: '1',
+    visitCode: 'HS001',
+    patientId: '1',
+    patient: {
+      id: '1',
+      fullName: 'Nguyễn Văn An',
+      dateOfBirth: '1990-05-15',
+      phoneNumber: '0123456789',
+      address: '123 Đường ABC, Quận 1, TP.HCM'
+    },
+    doctorId: '1',
+    doctor: {
+      id: '1',
+      fullName: 'BS. Nguyễn Văn A',
+      specialization: 'Tim mạch',
+      phoneNumber: '0987654321'
+    },
+    appointmentId: '1',
+    visitDate: '2024-01-20T08:30:00Z',
+    preliminaryDx: 'Tăng huyết áp',
+    symptoms: 'Đau đầu, chóng mặt, mệt mỏi',
+    clinicalNotes: 'Bệnh nhân có tiền sử tăng huyết áp, cần theo dõi thường xuyên',
+    status: 'COMPLETED',
+    createdAt: '2024-01-20T08:30:00Z',
+    updatedAt: '2024-01-20T10:30:00Z'
+  },
+  {
+    id: '2',
+    visitCode: 'HS002',
+    patientId: '2',
+    patient: {
+      id: '2',
+      fullName: 'Trần Thị Bình',
+      dateOfBirth: '1985-12-03',
+      phoneNumber: '0987654321',
+      address: '456 Đường XYZ, Quận 2, TP.HCM'
+    },
+    doctorId: '2',
+    doctor: {
+      id: '2',
+      fullName: 'BS. Trần Thị B',
+      specialization: 'Nội khoa',
+      phoneNumber: '0369258147'
+    },
+    visitDate: '2024-01-21T09:00:00Z',
+    preliminaryDx: 'Cảm cúm',
+    symptoms: 'Sốt, ho, đau họng',
+    clinicalNotes: 'Bệnh nhân có triệu chứng cảm cúm thông thường',
+    status: 'IN_PROGRESS',
+    createdAt: '2024-01-21T09:00:00Z',
+    updatedAt: '2024-01-21T09:00:00Z'
+  }
+];
+
+const mockMedicalServices: MedicalService[] = [
+  {
+    id: '1',
+    name: 'Khám tim mạch',
+    description: 'Khám và đánh giá chức năng tim mạch',
+    category: 'EXAMINATION',
+    price: 200000,
+    unit: 'lần',
+    isActive: true,
+    indicators: [
+      { id: '1', name: 'Huyết áp', type: 'TEXT', required: true, unit: 'mmHg' },
+      { id: '2', name: 'Nhịp tim', type: 'NUMBER', required: true, unit: 'bpm' }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Xét nghiệm máu',
+    description: 'Xét nghiệm công thức máu cơ bản',
+    category: 'DIAGNOSTIC',
+    price: 150000,
+    unit: 'lần',
+    isActive: true,
+    indicators: [
+      { id: '3', name: 'Hồng cầu', type: 'NUMBER', required: true, unit: '10^12/L' },
+      { id: '4', name: 'Bạch cầu', type: 'NUMBER', required: true, unit: '10^9/L' }
+    ]
+  }
+];
+
+const mockMedications: Medication[] = [
+  {
+    id: '1',
+    name: 'Paracetamol',
+    genericName: 'Acetaminophen',
+    category: 'ANALGESIC',
+    unit: 'viên',
+    price: 2000,
+    isActive: true,
+    description: 'Thuốc giảm đau, hạ sốt',
+    contraindications: ['Suy gan nặng'],
+    sideEffects: ['Buồn nôn, nôn']
+  },
+  {
+    id: '2',
+    name: 'Amoxicillin',
+    genericName: 'Amoxicillin',
+    category: 'ANTIBIOTIC',
+    unit: 'viên',
+    price: 5000,
+    isActive: true,
+    description: 'Kháng sinh điều trị nhiễm khuẩn',
+    contraindications: ['Dị ứng penicillin'],
+    sideEffects: ['Tiêu chảy, buồn nôn']
+  }
+];
+
+const mockServiceOrders: ServiceOrder[] = [
+  {
+    id: '1',
+    visitId: '1',
+    serviceId: '1',
+    service: mockMedicalServices[0],
+    performerId: '1',
+    performer: {
+      id: '1',
+      fullName: 'BS. Nguyễn Văn A',
+      specialization: 'Tim mạch'
+    },
+    status: 'COMPLETED',
+    result: 'Huyết áp: 140/90 mmHg, Nhịp tim: 80 bpm',
+    indicators: [
+      { indicatorId: '1', indicator: mockMedicalServices[0].indicators![0], value: '140/90' },
+      { indicatorId: '2', indicator: mockMedicalServices[0].indicators![1], value: 80 }
+    ],
+    notes: 'Bệnh nhân cần theo dõi huyết áp thường xuyên',
+    createdAt: '2024-01-20T08:30:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
+  }
+];
+
+const mockPrescriptions: Prescription[] = [
+  {
+    id: '1',
+    visitId: '1',
+    medications: [
+      {
+        id: '1',
+        medicationId: '1',
+        medication: mockMedications[0],
+        dosage: '1 viên x 3 lần/ngày',
+        quantity: 30,
+        unit: 'viên',
+        usageNotes: 'Uống sau bữa ăn',
+        price: 2000,
+        totalPrice: 60000
+      }
+    ],
+    totalAmount: 60000,
+    notes: 'Uống thuốc đúng giờ, tái khám sau 1 tuần',
+    createdAt: '2024-01-20T09:30:00Z',
+    updatedAt: '2024-01-20T09:30:00Z'
+  }
+];
+
+const mockBillings: Billing[] = [
+  {
+    id: '1',
+    visitId: '1',
+    serviceOrders: mockServiceOrders,
+    prescription: mockPrescriptions[0],
+    subtotal: 260000,
+    discount: 0,
+    total: 260000,
+    status: 'PENDING',
+    createdAt: '2024-01-20T10:00:00Z',
+    updatedAt: '2024-01-20T10:00:00Z'
+  }
+];
+
+// Visit handlers
+export const visitHandlers = [
+  // Get all visits
+  http.get('/api/visits', ({ request }) => {
+    const url = new URL(request.url);
+    const doctorId = url.searchParams.get('doctorId');
+    const status = url.searchParams.get('status');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
+    const search = url.searchParams.get('search');
+
+    let filteredVisits = [...mockVisits];
+
+    if (doctorId) {
+      filteredVisits = filteredVisits.filter(v => v.doctorId === doctorId);
+    }
+    if (status) {
+      filteredVisits = filteredVisits.filter(v => v.status === status);
+    }
+    if (dateFrom) {
+      filteredVisits = filteredVisits.filter(v => v.visitDate >= dateFrom);
+    }
+    if (dateTo) {
+      filteredVisits = filteredVisits.filter(v => v.visitDate <= dateTo);
+    }
+    if (search) {
+      filteredVisits = filteredVisits.filter(v => 
+        v.patient.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        v.visitCode.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    return HttpResponse.json({
+      data: filteredVisits,
+      total: filteredVisits.length
+    });
+  }),
+
+  // Get visit by ID
+  http.get('/api/visits/:id', ({ params }) => {
+    const visit = mockVisits.find(v => v.id === params.id);
+    if (!visit) {
+      return HttpResponse.json({ error: 'Visit not found' }, { status: 404 });
+    }
+    return HttpResponse.json(visit);
+  }),
+
+  // Create visit
+  http.post('/api/visits', async ({ request }) => {
+    const body = await request.json() as any;
+    const newVisit: Visit = {
+      id: (mockVisits.length + 1).toString(),
+      visitCode: `HS${String(mockVisits.length + 1).padStart(3, '0')}`,
+      ...body,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    mockVisits.push(newVisit);
+    return HttpResponse.json(newVisit, { status: 201 });
+  }),
+
+  // Update visit
+  http.put('/api/visits/:id', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const index = mockVisits.findIndex(v => v.id === params.id);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Visit not found' }, { status: 404 });
+    }
+    mockVisits[index] = { ...mockVisits[index], ...body, updatedAt: new Date().toISOString() };
+    return HttpResponse.json(mockVisits[index]);
+  }),
+
+  // Delete visit
+  http.delete('/api/visits/:id', ({ params }) => {
+    const index = mockVisits.findIndex(v => v.id === params.id);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Visit not found' }, { status: 404 });
+    }
+    mockVisits.splice(index, 1);
+    return HttpResponse.json({ success: true });
+  }),
+
+  // Get confirmed appointments
+  http.get('/api/appointments/confirmed', () => {
+    return HttpResponse.json([
+      {
+        id: '1',
+        patient: { id: '1', fullName: 'Nguyễn Văn An' },
+        scheduledAt: '2024-01-22T08:30:00Z'
+      }
+    ]);
+  }),
+
+  // Generate visit code
+  http.get('/api/visits/generate-code', () => {
+    return HttpResponse.json({ code: `HS${String(mockVisits.length + 1).padStart(3, '0')}` });
+  }),
+
+  // Service Orders
+  http.get('/api/visits/:visitId/service-orders', ({ params }) => {
+    const serviceOrders = mockServiceOrders.filter(so => so.visitId === params.visitId);
+    return HttpResponse.json(serviceOrders);
+  }),
+
+  http.post('/api/visits/:visitId/service-orders', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const service = mockMedicalServices.find(s => s.id === body.serviceId);
+    if (!service) {
+      return HttpResponse.json({ error: 'Service not found' }, { status: 404 });
+    }
+    const newOrder: ServiceOrder = {
+      id: (mockServiceOrders.length + 1).toString(),
+      visitId: params.visitId as string,
+      serviceId: body.serviceId,
+      service,
+      performerId: body.performerId,
+      status: 'PENDING',
+      notes: body.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    mockServiceOrders.push(newOrder);
+    return HttpResponse.json(newOrder, { status: 201 });
+  }),
+
+  http.put('/api/visits/:visitId/service-orders/:orderId', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const index = mockServiceOrders.findIndex(so => so.id === params.orderId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Service order not found' }, { status: 404 });
+    }
+    mockServiceOrders[index] = { ...mockServiceOrders[index], ...body, updatedAt: new Date().toISOString() };
+    return HttpResponse.json(mockServiceOrders[index]);
+  }),
+
+  http.delete('/api/visits/:visitId/service-orders/:orderId', ({ params }) => {
+    const index = mockServiceOrders.findIndex(so => so.id === params.orderId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Service order not found' }, { status: 404 });
+    }
+    mockServiceOrders.splice(index, 1);
+    return HttpResponse.json({ success: true });
+  }),
+
+  // Medical Services
+  http.get('/api/medical-services', () => {
+    return HttpResponse.json(mockMedicalServices);
+  }),
+
+  http.get('/api/medical-services/:id', ({ params }) => {
+    const service = mockMedicalServices.find(s => s.id === params.id);
+    if (!service) {
+      return HttpResponse.json({ error: 'Service not found' }, { status: 404 });
+    }
+    return HttpResponse.json(service);
+  }),
+
+  // Medications
+  http.get('/api/medications', () => {
+    return HttpResponse.json(mockMedications);
+  }),
+
+  http.get('/api/medications/:id', ({ params }) => {
+    const medication = mockMedications.find(m => m.id === params.id);
+    if (!medication) {
+      return HttpResponse.json({ error: 'Medication not found' }, { status: 404 });
+    }
+    return HttpResponse.json(medication);
+  }),
+
+  http.get('/api/medications/search', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('q');
+    if (!query) {
+      return HttpResponse.json(mockMedications);
+    }
+    const filtered = mockMedications.filter(m => 
+      m.name.toLowerCase().includes(query.toLowerCase()) ||
+      m.genericName?.toLowerCase().includes(query.toLowerCase())
+    );
+    return HttpResponse.json(filtered);
+  }),
+
+  // Prescriptions
+  http.get('/api/visits/:visitId/prescription', ({ params }) => {
+    const prescription = mockPrescriptions.find(p => p.visitId === params.visitId);
+    return HttpResponse.json(prescription || null);
+  }),
+
+  http.post('/api/visits/:visitId/prescription', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const newPrescription: Prescription = {
+      id: (mockPrescriptions.length + 1).toString(),
+      visitId: params.visitId as string,
+      medications: body.medications.map((med: any) => ({
+        id: (Date.now() + Math.random()).toString(),
+        medicationId: med.medicationId,
+        medication: mockMedications.find(m => m.id === med.medicationId)!,
+        dosage: med.dosage,
+        quantity: med.quantity,
+        unit: med.unit,
+        usageNotes: med.usageNotes,
+        price: mockMedications.find(m => m.id === med.medicationId)!.price,
+        totalPrice: mockMedications.find(m => m.id === med.medicationId)!.price * med.quantity
+      })),
+      totalAmount: body.medications.reduce((total: number, med: any) => 
+        total + (mockMedications.find(m => m.id === med.medicationId)!.price * med.quantity), 0),
+      notes: body.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    mockPrescriptions.push(newPrescription);
+    return HttpResponse.json(newPrescription, { status: 201 });
+  }),
+
+  http.put('/api/visits/:visitId/prescription', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const index = mockPrescriptions.findIndex(p => p.visitId === params.visitId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Prescription not found' }, { status: 404 });
+    }
+    mockPrescriptions[index] = {
+      ...mockPrescriptions[index],
+      medications: body.medications.map((med: any) => ({
+        id: (Date.now() + Math.random()).toString(),
+        medicationId: med.medicationId,
+        medication: mockMedications.find(m => m.id === med.medicationId)!,
+        dosage: med.dosage,
+        quantity: med.quantity,
+        unit: med.unit,
+        usageNotes: med.usageNotes,
+        price: mockMedications.find(m => m.id === med.medicationId)!.price,
+        totalPrice: mockMedications.find(m => m.id === med.medicationId)!.price * med.quantity
+      })),
+      totalAmount: body.medications.reduce((total: number, med: any) => 
+        total + (mockMedications.find(m => m.id === med.medicationId)!.price * med.quantity), 0),
+      notes: body.notes,
+      updatedAt: new Date().toISOString()
+    };
+    return HttpResponse.json(mockPrescriptions[index]);
+  }),
+
+  http.delete('/api/visits/:visitId/prescription', ({ params }) => {
+    const index = mockPrescriptions.findIndex(p => p.visitId === params.visitId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Prescription not found' }, { status: 404 });
+    }
+    mockPrescriptions.splice(index, 1);
+    return HttpResponse.json({ success: true });
+  }),
+
+  // Billing
+  http.get('/api/visits/:visitId/billing', ({ params }) => {
+    const billing = mockBillings.find(b => b.visitId === params.visitId);
+    return HttpResponse.json(billing || null);
+  }),
+
+  http.post('/api/visits/:visitId/billing', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const visit = mockVisits.find(v => v.id === params.visitId);
+    if (!visit) {
+      return HttpResponse.json({ error: 'Visit not found' }, { status: 404 });
+    }
+    const newBilling: Billing = {
+      id: (mockBillings.length + 1).toString(),
+      visitId: params.visitId as string,
+      serviceOrders: mockServiceOrders.filter(so => so.visitId === params.visitId),
+      prescription: mockPrescriptions.find(p => p.visitId === params.visitId),
+      subtotal: 0, // Calculate from services and prescription
+      discount: body.discount || 0,
+      total: 0, // Calculate total
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    mockBillings.push(newBilling);
+    return HttpResponse.json(newBilling, { status: 201 });
+  }),
+
+  http.put('/api/visits/:visitId/billing', async ({ params, request }) => {
+    const body = await request.json() as any;
+    const index = mockBillings.findIndex(b => b.visitId === params.visitId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Billing not found' }, { status: 404 });
+    }
+    mockBillings[index] = {
+      ...mockBillings[index],
+      discount: body.discount || 0,
+      discountReason: body.discountReason,
+      updatedAt: new Date().toISOString()
+    };
+    return HttpResponse.json(mockBillings[index]);
+  }),
+
+  http.patch('/api/visits/:visitId/billing/paid', ({ params }) => {
+    const index = mockBillings.findIndex(b => b.visitId === params.visitId);
+    if (index === -1) {
+      return HttpResponse.json({ error: 'Billing not found' }, { status: 404 });
+    }
+    mockBillings[index] = {
+      ...mockBillings[index],
+      status: 'PAID',
+      paidAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    return HttpResponse.json(mockBillings[index]);
+  }),
+
+  http.get('/api/visits/:visitId/billing/pdf', ({ params }) => {
+    // Mock PDF generation
+    const billing = mockBillings.find(b => b.visitId === params.visitId);
+    if (!billing) {
+      return HttpResponse.json({ error: 'Billing not found' }, { status: 404 });
+    }
+    // Return a mock PDF blob
+    const pdfContent = `PDF content for billing ${billing.id}`;
+    return new HttpResponse(pdfContent, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="hoa-don-${billing.id}.pdf"`
+      }
+    });
+  })
+];
 
 // Mock API handlers
 export const handlers = [
@@ -1689,6 +2195,9 @@ export const handlers = [
 
     return HttpResponse.json(filteredAppointments);
   }),
+
+  // Visit handlers
+  ...visitHandlers
 ];
 
 // Helper function to calculate end time
@@ -1700,3 +2209,4 @@ function calculateEndTime(startTime: string, duration: number): string {
   const endMins = endMinutes % 60;
   return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
 }
+
