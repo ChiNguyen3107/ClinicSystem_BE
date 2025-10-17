@@ -58,10 +58,10 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
             CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfig corsConfig) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
                 .authorizeHttpRequests(
                         authz -> authz
                                 .requestMatchers("/", "/auth/login", "/auth/refresh", "/auth/forgot-password", "/auth/reset-password").permitAll()

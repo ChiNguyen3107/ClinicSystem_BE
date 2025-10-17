@@ -18,6 +18,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import vn.project.ClinicSystem.model.Doctor;
 import vn.project.ClinicSystem.model.dto.DoctorCreateRequest;
@@ -25,6 +33,7 @@ import vn.project.ClinicSystem.service.DoctorService;
 
 @RestController
 @RequestMapping("/doctors")
+@Tag(name = "Doctor Management", description = "API quản lý bác sĩ")
 public class DoctorController {
     private final DoctorService doctorService;
 
@@ -32,17 +41,66 @@ public class DoctorController {
         this.doctorService = doctorService;
     }
 
+    @Operation(
+        summary = "Tạo bác sĩ mới",
+        description = "Tạo thông tin bác sĩ mới trong hệ thống (chỉ ADMIN)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "Tạo bác sĩ thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Doctor.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Không có quyền truy cập",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Forbidden",
+                    value = """
+                    {
+                        "error": "Forbidden",
+                        "message": "Access denied"
+                    }
+                    """
+                )
+            )
+        )
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<Doctor> createDoctor(@Valid @RequestBody DoctorCreateRequest request) {
+    public ResponseEntity<Doctor> createDoctor(
+        @Parameter(description = "Thông tin bác sĩ mới", required = true)
+        @Valid @RequestBody DoctorCreateRequest request) {
         Doctor created = doctorService.createForUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @Operation(
+        summary = "Lấy danh sách bác sĩ",
+        description = "Lấy danh sách bác sĩ với phân trang và lọc theo chuyên khoa"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Lấy danh sách bác sĩ thành công",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Page.class)
+            )
+        )
+    })
     @GetMapping
     public ResponseEntity<Page<Doctor>> getDoctors(
+            @Parameter(description = "Số trang (bắt đầu từ 0)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số lượng bản ghi mỗi trang", example = "10")
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Lọc theo chuyên khoa", example = "Cardiology")
             @RequestParam(value = "specialty", required = false) String specialty) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Doctor> doctors = doctorService.searchBySpecialty(specialty, pageable);

@@ -86,9 +86,6 @@ export default defineConfig({
         },
         // Optimize chunk names
         chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
-            ? chunkInfo.facadeModuleId.split('/').pop()?.replace('.tsx', '').replace('.ts', '')
-            : 'chunk'
           return `js/[name]-[hash].js`
         },
         entryFileNames: 'js/[name]-[hash].js',
@@ -112,13 +109,7 @@ export default defineConfig({
     // Enable source maps for debugging
     sourcemap: true,
     // Optimize bundle size
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild',
     // Set chunk size warning limit
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting

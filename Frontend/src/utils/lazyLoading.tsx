@@ -8,11 +8,13 @@ export const createLazyComponent = <P extends object>(
 ) => {
   const LazyComponent = lazy(importFunc);
   
-  return (props: P) => (
-    <Suspense fallback={fallback || <DefaultFallback />}>
-      <LazyComponent {...props} />
-    </Suspense>
-  );
+  return (props: P) => {
+    return (
+      <Suspense fallback={fallback || <DefaultFallback />}>
+        <LazyComponent {...props} />
+      </Suspense>
+    );
+  };
 };
 
 // Default fallback component
